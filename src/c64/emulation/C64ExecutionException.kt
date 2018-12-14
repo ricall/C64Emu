@@ -1,9 +1,9 @@
 package c64.emulation
 
 /**
- * todo: class description
+ * General exception class for errors during emulation.
  *
- * @author schulted
+ * @author schulted 2017-2018
  */
 class C64ExecutionException
 internal constructor(message: String) : Exception(message)

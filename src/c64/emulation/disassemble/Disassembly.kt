@@ -9,7 +9,7 @@ import c64.util.toUnprefixedHex
 /**
  * Class wich can be used to disassemble code.
  *
- * @author schulted
+ * @author schulted 2017-2018
  */
 @ExperimentalUnsignedTypes
 class Disassembly(private var registers: Registers, private var memory: Memory) {
