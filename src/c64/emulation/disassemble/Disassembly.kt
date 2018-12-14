@@ -35,6 +35,7 @@ class Disassembly(private var registers: Registers, private var memory: Memory) 
     init {
         // initialize debug table
         INSTRUCTION_TABLE[0x00] = DisassembleInfo("BRK", AddressingMode.Implied)
+        INSTRUCTION_TABLE[0x06] = DisassembleInfo("ASL", AddressingMode.ZeroPage)
         INSTRUCTION_TABLE[0x08] = DisassembleInfo("PHP", AddressingMode.Implied)
         INSTRUCTION_TABLE[0x09] = DisassembleInfo("ORA", AddressingMode.Immediate)
         INSTRUCTION_TABLE[0x0A] = DisassembleInfo("ASL", AddressingMode.Implied)

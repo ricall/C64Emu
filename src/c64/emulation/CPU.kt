@@ -78,7 +78,7 @@ class CPU(private var registers: Registers, private var memory: Memory) {
         //val breakpoint = 0xFF5E
         val breakpoint = 0x0000
         //val startDisassembleAt = 0xB6E1  // 0xFCE2
-        val startDisassembleAt = 0x2393
+        val startDisassembleAt = 0x240c
 
         val machineIsRunning = true
         try {

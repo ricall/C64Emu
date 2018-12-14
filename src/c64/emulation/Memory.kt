@@ -243,6 +243,13 @@ class Memory {
     }
 
     /**
+     * Returns the zero-page address from the first op argument.
+     */
+    fun fetchZeroPageAddressWithPC(): Int {
+        return fetchWithPC().toInt()
+    }
+
+    /**
      * Returns the zero-page address from the first op argument indexed with X, with respect to the zero page boundaries.
      */
     fun fetchZeroPageXAddressWithPC(): Int {

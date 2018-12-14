@@ -13,6 +13,7 @@ import c64.emulation.Registers
 class Shift(private var cpu: CPU, private var registers: Registers, @Suppress("unused") private var memory: Memory) {
 
     init {
+        cpu.registerInstruction(0x06, ::opASL)
         cpu.registerInstruction(0x0A, ::opASL)
         cpu.registerInstruction(0x2A, ::opROL)
         cpu.registerInstruction(0x4A, ::opLSR)
@@ -76,20 +77,33 @@ class Shift(private var cpu: CPU, private var registers: Registers, @Suppress("u
      */
     private fun opASL() {
         // todo: switch for 5 addressing modes...
+        var result = 0
         when (cpu.currentOpcode.toInt()) {
+            0x06 -> {
+                // addressing mode: zeropage
+                // cycles: 5
+                registers.cycles += 5
+                val addr = memory.fetchZeroPageAddressWithPC()
+                // shift left by 1
+                result = memory.fetch(addr).toInt() shl 1
+                // save bit 8 in the carry flag...
+                registers.C = result and 0x100 == 0x100
+                // push value back to zeropage address
+                memory.push(addr, result.toUByte())
+            }
             0x0A -> {
                 // addressing mode: accumulator
                 // cycles: 2
                 registers.cycles += 2
                 // shift left by 1
-                val result = registers.A.toInt() shl 1
+                result = registers.A.toInt() shl 1
                 // save bit 8 in the carry flag...
                 registers.C = result and 0x100 == 0x100
                 registers.A = result.toUByte()
             }
         }
-        registers.setZeroFlagFromValue(registers.A)
-        registers.setNegativeFlagFromValue(registers.A)
+        registers.setZeroFlagFromValue(result.toUByte())
+        registers.setNegativeFlagFromValue(result.toUByte())
     }
 
     /**
