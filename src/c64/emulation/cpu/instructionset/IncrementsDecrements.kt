@@ -7,7 +7,7 @@ import c64.emulation.Registers
 /**
  * Class collecting all "Increment / Decrement" instructions.
  *
- * @author schulted 2017-2018
+ * @author Daniel Schulte 2017-2018
  */
 @ExperimentalUnsignedTypes
 class IncrementsDecrements(private var cpu: CPU, private var registers: Registers, private var memory: Memory) {
@@ -30,7 +30,7 @@ class IncrementsDecrements(private var cpu: CPU, private var registers: Register
                 // addressing mode: zeropage
                 // cycles: 5
                 val addr = memory.fetchWithPC().toInt()
-                memory.push(addr, (memory.fetch(addr) + 1u).toUByte())
+                memory.store(addr, (memory.fetch(addr) + 1u).toUByte())
                 registers.cycles += 5
             }
             else -> {

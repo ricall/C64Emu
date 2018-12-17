@@ -7,7 +7,7 @@ import c64.emulation.Registers
 /**
  * Class collecting all "Logical" instructions.
  *
- * @author schulted 2017-2018
+ * @author Daniel Schulte 2017-2018
  */
 @ExperimentalUnsignedTypes
 class Logical(private var cpu: CPU, private var registers: Registers, private var memory: Memory) {

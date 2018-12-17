@@ -12,7 +12,7 @@ private val logger = KotlinLogging.logger {}
 /**
  * Class which encapsulates all operations on memory.
  *
- * @author schulted 2017-2018
+ * @author Daniel Schulte 2017-2018
  */
 @ExperimentalUnsignedTypes
 class Memory {
@@ -316,9 +316,9 @@ class Memory {
     }
 
     /**
-     * Fetches a word form the stack and increases the SP by two.
+     * Pops a word form the stack and increases the SP by two.
      */
-    fun fetchWordFromStack(): Int {
+    fun popWordFromStack(): Int {
         // little-endian (Lo-Hi)
         registers.SP++
         val lo = fetch(STACK_OFFSET + registers.SP.toInt())
@@ -327,52 +327,51 @@ class Memory {
         return wordFromLoHi(lo, hi)
     }
 
-    // TODO: rename push to store...
     /**
-     * Pushes a single byte at the given address.
+     * Stores a single byte at the given address.
      */
-    fun push(address: Int, byte: UByte) {
+    fun store(address: Int, byte: UByte) {
         // todo: check address for access ram or rom
         // use only bit 0-15, mask out
         mem[address and 0xFFFF] = byte
     }
 
     /**
-     * Pushes a word in little-endian (hi-lo) at the given address.
+     * Stores a word in little-endian (hi-lo) at the given address.
      */
     @Suppress("unused")
-    fun pushWord(address: Int, word: Int) {
-        push(address, loByteFromWord(word))
-        push(address + 1, hiByteFromWord(word))
+    fun storeWord(address: Int, word: Int) {
+        store(address, loByteFromWord(word))
+        store(address + 1, hiByteFromWord(word))
     }
 
     /**
      * Pushes a single byte on the stack and decreases the SP by one.
      */
     fun pushToStack(byte: UByte) {
-        push(STACK_OFFSET + registers.SP.toInt(), byte)
+        store(STACK_OFFSET + registers.SP.toInt(), byte)
         registers.SP--
     }
 
     /**
-     * Pulls/Fetches a single byte form the stack and increases the SP by one.
+     * Pops a single byte form the stack and increases the SP by one.
      */
-    fun fetchFromStack(): UByte {
+    fun popFromStack(): UByte {
         registers.SP++
         return fetch(STACK_OFFSET + registers.SP.toInt())
     }
 
     /**
-     * Pushes a word on the stack and decreases the SP by two.
+     * Pushes word on the stack and decreases the SP by two.
      */
     fun pushWordToStack(word: Int) {
         // little-endian (Lo-Hi)
-        push(
+        store(
             STACK_OFFSET + registers.SP.toInt(),
             hiByteFromWord(word)
         )
         registers.SP--
-        push(
+        store(
             STACK_OFFSET + registers.SP.toInt(),
             loByteFromWord(word)
         )

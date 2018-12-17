@@ -7,7 +7,7 @@ import c64.emulation.Registers
 /**
  * Class collecting all "Jump / Call" instructions.
  *
- * @author schulted 2017-2018
+ * @author Daniel Schulte 2017-2018
  */
 @ExperimentalUnsignedTypes
 class JumpsCalls(private var cpu: CPU, private var registers: Registers, private var memory: Memory) {
@@ -55,7 +55,7 @@ class JumpsCalls(private var cpu: CPU, private var registers: Registers, private
      */
     private fun opRTS() {
         // cycles: 6
-        registers.PC = memory.fetchWordFromStack() + 1
+        registers.PC = memory.popWordFromStack() + 1
         registers.cycles += 6
     }
 

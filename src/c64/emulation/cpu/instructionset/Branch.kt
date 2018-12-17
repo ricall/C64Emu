@@ -8,7 +8,7 @@ import c64.emulation.Registers
 /**
  * Class collecting all "Branch" instructions.
  *
- * @author schulted 2017-2018
+ * @author Daniel Schulte 2017-2018
  */
 @ExperimentalUnsignedTypes
 class Branch(cpu: CPU, private var registers: Registers, private var memory: Memory) {

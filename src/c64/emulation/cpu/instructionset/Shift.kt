@@ -8,7 +8,7 @@ import c64.emulation.cpu.AddressingMode
 /**
  * Class collecting all "Shift" instructions.
  *
- * @author schulted 2017-2018
+ * @author Daniel Schulte 2017-2018
  */
 @ExperimentalUnsignedTypes
 class Shift(cpu: CPU, private var registers: Registers, @Suppress("unused") private var memory: Memory) {

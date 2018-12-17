@@ -20,7 +20,7 @@ typealias InstructionWithOp = (value: UByte) -> UByte
 /**
  * Emulator for CPU MOS 6510/8500.
  *
- * @author schulted 2017-2018
+ * @author Daniel Schulte 2017-2018
  */
 @ExperimentalUnsignedTypes
 class CPU(private var registers: Registers, private var memory: Memory) {
@@ -186,7 +186,7 @@ class CPU(private var registers: Registers, private var memory: Memory) {
         when (opCodeInfo.addressingMode) {
             AddressingMode.ZeroPage,
             AddressingMode.Absolute -> {
-                memory.push(addr, value)
+                memory.store(addr, value)
             }
             AddressingMode.Accumulator -> {
                 registers.A = value

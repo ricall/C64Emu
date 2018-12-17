@@ -7,7 +7,7 @@ import c64.emulation.Registers
 /**
  * Class collecting all "Load / Store" instructions.
  *
- * @author schulted 2017-2018
+ * @author Daniel Schulte 2017-2018
  */
 @ExperimentalUnsignedTypes
 class LoadStore(private var cpu: CPU, private var registers: Registers, private var memory: Memory) {
@@ -193,44 +193,44 @@ class LoadStore(private var cpu: CPU, private var registers: Registers, private 
                 // addressing mode: (indirect,x)
                 // cycles: 6
                 val addr = memory.fetchIndexedIndirectXAddressWithPC()
-                memory.push(addr, registers.A)
+                memory.store(addr, registers.A)
                 registers.cycles += 6
             }
             0x85 -> {
                 // addressing mode: zeropage
                 // cycles: 3
-                memory.push(memory.fetchWithPC().toInt(), registers.A)
+                memory.store(memory.fetchWithPC().toInt(), registers.A)
                 registers.cycles += 3
             }
             0x8D -> {
                 // addressing mode: absolute
                 // cycles: 4
-                memory.push(memory.fetchWordWithPC(), registers.A)
+                memory.store(memory.fetchWordWithPC(), registers.A)
                 registers.cycles += 4
             }
             0x91 -> {
                 // addressing mode: (indirect), y
                 // cycles: 6
                 val addr = memory.fetchIndirectIndexedYAddressWithPC()
-                memory.push(addr + registers.Y.toInt(), registers.A)
+                memory.store(addr + registers.Y.toInt(), registers.A)
                 registers.cycles += 6
             }
             0x95 -> {
                 // addressing mode: zeropage, x
                 // cycles: 4
-                memory.push(memory.fetchZeroPageXAddressWithPC(), registers.A)
+                memory.store(memory.fetchZeroPageXAddressWithPC(), registers.A)
                 registers.cycles += 4
             }
             0x99 -> {
                 // addressing mode: absolute, y
                 // cycles: 5
-                memory.push(memory.fetchWordWithPC() + registers.Y.toInt(), registers.A)
+                memory.store(memory.fetchWordWithPC() + registers.Y.toInt(), registers.A)
                 registers.cycles += 5
             }
             0x9D -> {
                 // addressing mode: absolute, x
                 // cycles: 5
-                memory.push(memory.fetchWordWithPC() + registers.X.toInt(), registers.A)
+                memory.store(memory.fetchWordWithPC() + registers.X.toInt(), registers.A)
                 registers.cycles += 5
             }
         }
@@ -244,19 +244,19 @@ class LoadStore(private var cpu: CPU, private var registers: Registers, private 
             0x86 -> {
                 // addressing mode: zeropage
                 // cycles: 3
-                memory.push(memory.fetchWithPC().toInt(), registers.X)
+                memory.store(memory.fetchWithPC().toInt(), registers.X)
                 registers.cycles += 3
             }
             0x8E -> {
                 // addressing mode: absolute
                 // cycles: 4
-                memory.push(memory.fetchWordWithPC(), registers.X)
+                memory.store(memory.fetchWordWithPC(), registers.X)
                 registers.cycles += 4
             }
             0x96 -> {
                 // addressing mode: zeropage, y
                 // cycles: 4
-                memory.push(memory.fetchZeroPageYAddressWithPC(), registers.X)
+                memory.store(memory.fetchZeroPageYAddressWithPC(), registers.X)
                 registers.cycles += 4
             }
         }
@@ -270,19 +270,19 @@ class LoadStore(private var cpu: CPU, private var registers: Registers, private 
             0x84 -> {
                 // addressing mode: zeropage
                 // cycles: 3
-                memory.push(memory.fetchWithPC().toInt(), registers.Y)
+                memory.store(memory.fetchWithPC().toInt(), registers.Y)
                 registers.cycles += 3
             }
             0x8C -> {
                 // addressing mode: absolute
                 // cycles: 4
-                memory.push(memory.fetchWordWithPC(), registers.Y)
+                memory.store(memory.fetchWordWithPC(), registers.Y)
                 registers.cycles += 4
             }
             0x94 -> {
                 // addressing mode: zeropage, x
                 // cycles: 4
-                memory.push(memory.fetchZeroPageXAddressWithPC(), registers.Y)
+                memory.store(memory.fetchZeroPageXAddressWithPC(), registers.Y)
                 registers.cycles += 4
             }
         }

@@ -7,7 +7,7 @@ import c64.emulation.Registers
 /**
  * Class collecting all "system" instructions.
  *
- * @author schulted 2017-2018
+ * @author Daniel Schulte 2017-2018
  */
 @ExperimentalUnsignedTypes
 class System(cpu: CPU, private var registers: Registers, @Suppress("unused") private var memory: Memory) {
@@ -34,11 +34,11 @@ class System(cpu: CPU, private var registers: Registers, @Suppress("unused") pri
         registers.cycles += 7
         // increment PC - byte after opCode will be ignored
         registers.PC++
-        // push PC to stack
+        // store PC to stack
         memory.pushWordToStack(registers.PC)
         // set break flag
         registers.B = true
-        // push processor status to stack
+        // store processor status to stack
         memory.pushToStack(registers.getProcessorStatus())
         // set interrupt flag
         registers.I = true
@@ -53,8 +53,8 @@ class System(cpu: CPU, private var registers: Registers, @Suppress("unused") pri
         // cycles: 6
         registers.cycles += 6
         // fetch processor status from stack and set all flags
-        registers.setProcessorStatus(memory.fetchFromStack())
+        registers.setProcessorStatus(memory.popFromStack())
         // fetch PC from stack
-        registers.PC = memory.fetchWordFromStack()
+        registers.PC = memory.popWordFromStack()
     }
 }

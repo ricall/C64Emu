@@ -7,7 +7,7 @@ import c64.emulation.Registers
 /**
  * Class collecting all "Stack" instructions.
  *
- * @author schulted 2017-2018
+ * @author Daniel Schulte 2017-2018
  */
 @ExperimentalUnsignedTypes
 class Stack(cpu: CPU, private var registers: Registers, @Suppress("unused") private var memory: Memory) {
@@ -35,7 +35,7 @@ class Stack(cpu: CPU, private var registers: Registers, @Suppress("unused") priv
      */
     private fun opPLP() {
         // cycles: 4
-        registers.setProcessorStatus(memory.fetchFromStack())
+        registers.setProcessorStatus(memory.popFromStack())
         registers.cycles += 4
     }
 
@@ -53,7 +53,7 @@ class Stack(cpu: CPU, private var registers: Registers, @Suppress("unused") priv
      */
     private fun opPLA() {
         // cycles: 4
-        registers.A = memory.fetchFromStack()
+        registers.A = memory.popFromStack()
         registers.cycles += 4
         registers.setZeroFlagFromValue(registers.A)
         registers.setNegativeFlagFromValue(registers.A)

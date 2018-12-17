@@ -1,7 +1,7 @@
 package c64.util
 
 /**
- * @author schulted 2017-2018
+ * @author Daniel Schulte 2017-2018
  */
 
 /**

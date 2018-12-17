@@ -7,7 +7,7 @@ import c64.emulation.Registers
 /**
  * Class collecting all "Status flag" instructions.
  *
- * @author schulted 2017-2018
+ * @author Daniel Schulte 2017-2018
  */
 @ExperimentalUnsignedTypes
 class StatusFlags(cpu: CPU, private var registers: Registers, @Suppress("unused") private var memory: Memory) {
