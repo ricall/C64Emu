@@ -18,12 +18,15 @@ class Shift(cpu: CPU, private var registers: Registers, @Suppress("unused") priv
         cpu.registerInstruction(0x0A, ::opASL, AddressingMode.Accumulator, 2)
         cpu.registerInstruction(0x0E, ::opASL, AddressingMode.Absolute, 6)
         cpu.registerInstruction(0x26, ::opROL, AddressingMode.ZeroPage, 5)
+        cpu.registerInstruction(0x16, ::opASL, AddressingMode.ZeroPageX, 6)
         cpu.registerInstruction(0x2A, ::opROL, AddressingMode.Accumulator, 2)
+        cpu.registerInstruction(0x2E, ::opROL, AddressingMode.Absolute, 6)
         cpu.registerInstruction(0x46, ::opLSR, AddressingMode.ZeroPage, 5)
         cpu.registerInstruction(0x4A, ::opLSR, AddressingMode.Accumulator, 2)
         cpu.registerInstruction(0x4E, ::opLSR, AddressingMode.Absolute, 6)
         cpu.registerInstruction(0x66, ::opROR, AddressingMode.ZeroPage, 5)
         cpu.registerInstruction(0x6A, ::opROR, AddressingMode.Accumulator, 2)
+        cpu.registerInstruction(0x6E, ::opROR, AddressingMode.Absolute, 6)
     }
 
     /**

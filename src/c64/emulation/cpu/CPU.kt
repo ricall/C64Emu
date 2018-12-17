@@ -101,7 +101,7 @@ class CPU(private var registers: Registers, private var memory: Memory) {
         //val breakpoint = 0xFF5E
         val breakpoint = 0x0000
         //val startDisassembleAt = 0xB6E1  // 0xFCE2
-        val startDisassembleAt = 0x25CF
+        val startDisassembleAt = 0x2770
 
         val machineIsRunning = true
         try {
@@ -165,6 +165,9 @@ class CPU(private var registers: Registers, private var memory: Memory) {
             AddressingMode.ZeroPage -> {
                 addr = memory.fetchZeroPageAddressWithPC()
             }
+            AddressingMode.ZeroPageX -> {
+                addr = memory.fetchZeroPageXAddressWithPC()
+            }
             AddressingMode.Accumulator -> {
                 value = registers.A
             }
@@ -185,6 +188,7 @@ class CPU(private var registers: Registers, private var memory: Memory) {
         // write back value to memory
         when (opCodeInfo.addressingMode) {
             AddressingMode.ZeroPage,
+            AddressingMode.ZeroPageX,
             AddressingMode.Absolute -> {
                 memory.store(addr, value)
             }
