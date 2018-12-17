@@ -14,6 +14,8 @@ private val logger = KotlinLogging.logger {}
 
 // alias for "Instruction" functions
 typealias Instruction = () -> Unit
+@ExperimentalUnsignedTypes
+typealias InstructionWithOp = (value: UByte) -> UByte
 
 /**
  * Emulator for CPU MOS 6510/8500.
@@ -23,10 +25,15 @@ typealias Instruction = () -> Unit
 @ExperimentalUnsignedTypes
 class CPU(private var registers: Registers, private var memory: Memory) {
 
+    private data class OpCodeInfo(val instruction: Instruction)
+    private data class OpCodeInfoWithParams(val instruction: InstructionWithOp,
+                                            val addressingMode: AddressingMode,
+                                            val cycles: Int)
+
     companion object {
         const val RESET_VECTOR: Int = 0xFFFC
         // table with all instructions methods indexed with their opcode
-        val INSTRUCTION_TABLE = arrayOfNulls<Instruction>(0x100)
+        private val INSTRUCTION_TABLE = arrayOfNulls<Any>(0x100)
     }
 
     private var disassembly: Disassembly
@@ -55,6 +62,19 @@ class CPU(private var registers: Registers, private var memory: Memory) {
     }
 
     /**
+     * Registers a given instruction with the given opCode, addressingMode and cycles.
+     */
+    internal fun registerInstruction(opCode: Int, instruction: InstructionWithOp, addressingMode: AddressingMode,
+                                     cycles: Int) {
+        // check for duplicate entries
+        if (INSTRUCTION_TABLE[opCode] != null) {
+            throw IllegalArgumentException("Duplicate registration of opcode <${opCode.toUByte().toHex()}> !")
+        }
+        INSTRUCTION_TABLE[opCode] = OpCodeInfoWithParams(instruction, addressingMode, cycles)
+        numOps++
+    }
+
+    /**
      * Registers a given instruction with the given opCode.
      */
     internal fun registerInstruction(opCode: Int, instruction: Instruction) {
@@ -62,7 +82,7 @@ class CPU(private var registers: Registers, private var memory: Memory) {
         if (INSTRUCTION_TABLE[opCode] != null) {
             throw IllegalArgumentException("Duplicate registration of opcode <${opCode.toUByte().toHex()}> !")
         }
-        INSTRUCTION_TABLE[opCode] = instruction
+        INSTRUCTION_TABLE[opCode] = OpCodeInfo(instruction)
         numOps++
     }
 
@@ -110,8 +130,8 @@ class CPU(private var registers: Registers, private var memory: Memory) {
 
     @Throws(C64ExecutionException::class)
     private fun decodeAndRunOpCode(opcode: UByte) {
-        val command = INSTRUCTION_TABLE[opcode.toInt()]
-        if (command != null) {
+        val opCodeInfo = INSTRUCTION_TABLE[opcode.toInt()]
+        if (opCodeInfo != null) {
             // print disassembled code
             if (logger.isDebugEnabled && printDisassembledCode) {
                 logger.debug(disassembly.disassemble(opcode))
@@ -119,7 +139,12 @@ class CPU(private var registers: Registers, private var memory: Memory) {
             if (debugging) {
                 scanner.nextLine()
             }
-            command.invoke()
+            if (opCodeInfo is OpCodeInfo) {
+                opCodeInfo.instruction.invoke()
+            }
+            else if (opCodeInfo is OpCodeInfoWithParams) {
+                runOpcodeWithFetchStoreCycles(opCodeInfo)
+            }
         }
         else {
             // reset PC to get the correct register output
@@ -129,6 +154,46 @@ class CPU(private var registers: Registers, private var memory: Memory) {
                         "${registers.printRegisters()}\n" +
                         memory.printMemoryLineWithAddress(registers.PC)
             )
+        }
+    }
+
+    private fun runOpcodeWithFetchStoreCycles(opCodeInfo: OpCodeInfoWithParams) {
+        var value: UByte = 0u
+        var addr = -1
+        // fetch value from memory
+        when (opCodeInfo.addressingMode) {
+            AddressingMode.ZeroPage -> {
+                addr = memory.fetchZeroPageAddressWithPC()
+            }
+            AddressingMode.Accumulator -> {
+                value = registers.A
+            }
+            AddressingMode.Absolute -> {
+                addr = memory.fetchWordWithPC()
+            }
+            else -> {
+                addr = 0
+                value = 0u
+            }
+        }
+        if (addr != -1) {
+            value = memory.fetch(addr)
+        }
+        value = opCodeInfo.instruction.invoke(value)
+        // increment cycles
+        registers.cycles += opCodeInfo.cycles
+        // write back value to memory
+        when (opCodeInfo.addressingMode) {
+            AddressingMode.ZeroPage,
+            AddressingMode.Absolute -> {
+                memory.push(addr, value)
+            }
+            AddressingMode.Accumulator -> {
+                registers.A = value
+            }
+            else -> {
+
+            }
         }
     }
 }

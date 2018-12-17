@@ -9,6 +9,6 @@ enum class AddressingMode(val numByte: Int) {
     Implied(1), ZeroPage(2), ZeroPageX(2), ZeroPageY(2),
     Immediate(2), Relative(2), Indirect(3),
     Absolute(3), AbsoluteX(3), AbsoluteY(3),
-    IndirectIndexedY(2), IndexedIndirectX(2)
-
+    IndirectIndexedY(2), IndexedIndirectX(2),
+    Accumulator(1)
 }

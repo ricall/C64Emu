@@ -3,6 +3,7 @@ package c64.emulation.cpu.instructionset
 import c64.emulation.cpu.CPU
 import c64.emulation.memory.Memory
 import c64.emulation.Registers
+import c64.emulation.cpu.AddressingMode
 
 /**
  * Class collecting all "Shift" instructions.
@@ -10,226 +11,88 @@ import c64.emulation.Registers
  * @author schulted 2017-2018
  */
 @ExperimentalUnsignedTypes
-class Shift(private var cpu: CPU, private var registers: Registers, @Suppress("unused") private var memory: Memory) {
+class Shift(cpu: CPU, private var registers: Registers, @Suppress("unused") private var memory: Memory) {
 
     init {
-        cpu.registerInstruction(0x06, ::opASL)
-        cpu.registerInstruction(0x0A, ::opASL)
-        cpu.registerInstruction(0x0E, ::opASL)
-        cpu.registerInstruction(0x26, ::opROL)
-        cpu.registerInstruction(0x2A, ::opROL)
-        cpu.registerInstruction(0x46, ::opLSR)
-        cpu.registerInstruction(0x4A, ::opLSR)
-        cpu.registerInstruction(0x4E, ::opLSR)
-        cpu.registerInstruction(0x66, ::opROR)
-        cpu.registerInstruction(0x6A, ::opROR)
+        cpu.registerInstruction(0x06, ::opASL, AddressingMode.ZeroPage, 5)
+        cpu.registerInstruction(0x0A, ::opASL, AddressingMode.Accumulator, 2)
+        cpu.registerInstruction(0x0E, ::opASL, AddressingMode.Absolute, 6)
+        cpu.registerInstruction(0x26, ::opROL, AddressingMode.ZeroPage, 5)
+        cpu.registerInstruction(0x2A, ::opROL, AddressingMode.Accumulator, 2)
+        cpu.registerInstruction(0x46, ::opLSR, AddressingMode.ZeroPage, 5)
+        cpu.registerInstruction(0x4A, ::opLSR, AddressingMode.Accumulator, 2)
+        cpu.registerInstruction(0x4E, ::opLSR, AddressingMode.Absolute, 6)
+        cpu.registerInstruction(0x66, ::opROR, AddressingMode.ZeroPage, 5)
+        cpu.registerInstruction(0x6A, ::opROR, AddressingMode.Accumulator, 2)
     }
 
     /**
      * Rotate Left.
      */
-    private fun opROL() {
+    private fun opROL(value: UByte): UByte {
         // todo: switch for 5 addressing modes...
-        var value = 0
-        var addr = -1
-        when (cpu.currentOpcode.toInt()) {
-            0x26 -> {
-                // addressing mode: zeropage
-                // cycles: 5
-                registers.cycles += 5
-                // get zeropage address
-                addr = memory.fetchZeroPageAddressWithPC()
-            }
-            0x2A -> {
-                // addressing mode: accumulator
-                // cycles: 2
-                registers.cycles += 2
-                value = registers.A.toInt()
-            }
-        }
-        if (addr != -1) {
-            // get current value from memory
-            value = memory.fetch(addr).toInt()
-        }
         // shift left by 1
-        value = value shl 1
+        var result = value.toInt() shl 1
         // fill bit 0 with the value of the carry flag
         if (registers.C) {
-            value = value or 0x1
+            result = result or 0x1
         }
+        val byteResult = result.toUByte()
         // save bit 8 in the carry flag...
-        registers.C = value and 0x100 == 0x100
-        registers.setZeroFlagFromValue(value.toUByte())
-        registers.setNegativeFlagFromValue(value.toUByte())
-
-        // write back result
-        when (cpu.currentOpcode.toInt()) {
-            0x26 -> {
-                memory.push(addr, value.toUByte())
-            }
-            0x2A -> {
-                registers.A = value.toUByte()
-            }
-        }
+        registers.C = result and 0x100 == 0x100
+        registers.setZeroFlagFromValue(byteResult)
+        registers.setNegativeFlagFromValue(byteResult)
+        return byteResult
     }
 
     /**
      * Rotate Right.
      */
-    private fun opROR() {
+    private fun opROR(value: UByte): UByte {
         // todo: switch for 5 addressing modes...
-        var value = 0
-        var addr = -1
-        when (cpu.currentOpcode.toInt()) {
-            0x66 -> {
-                // addressing mode: zeropage
-                // cycles: 5
-                registers.cycles += 5
-                addr = memory.fetchZeroPageAddressWithPC()
-            }
-            0x6A -> {
-                // addressing mode: accumulator
-                // cycles: 2
-                registers.cycles += 2
-                value = registers.A.toInt()
-            }
-        }
-        if (addr != -1) {
-            // get current value from memory
-            value = memory.fetch(addr).toInt()
-        }
         // save carry
         val carry = registers.C
         // move bit 0 in the carry flag...
-        registers.C = value and 0x01 == 0x01
+        registers.C = value.toInt() and 0x01 == 0x01
         // shift right by 1
-        value = value shr 1
+        var result = value.toInt() shr 1
         // fill bit 7 with the saved value of the carry flag
         if (carry) {
-            value = value or 0b1000_0000
+            result = result or 0b1000_0000
         }
-        val byteValue = value.toUByte()
-        registers.setZeroFlagFromValue(byteValue)
-        registers.setNegativeFlagFromValue(byteValue)
-
-        // write back result
-        when (cpu.currentOpcode.toInt()) {
-            0x66 -> {
-                memory.push(addr, byteValue)
-            }
-            0x6A -> {
-                registers.A = byteValue
-
-            }
-        }
+        val byteResult = result.toUByte()
+        registers.setZeroFlagFromValue(byteResult)
+        registers.setNegativeFlagFromValue(byteResult)
+        return byteResult
     }
 
     /**
      * Arithmetic Shift Left.
      */
-    private fun opASL() {
+    private fun opASL(value: UByte): UByte {
         // todo: switch for 5 addressing modes...
-        var value = 0
-        var addr = -1
-        // get value/address
-        when (cpu.currentOpcode.toInt()) {
-            0x06 -> {
-                // addressing mode: zeropage
-                // cycles: 5
-                registers.cycles += 5
-                addr = memory.fetchZeroPageAddressWithPC()
-            }
-            0x0A -> {
-                // addressing mode: accumulator
-                // cycles: 2
-                registers.cycles += 2
-                value = registers.A.toInt()
-            }
-            0x0E -> {
-                // addressing mode: absolute
-                // cycles: 6
-                registers.cycles += 6
-                addr = memory.fetchWordWithPC()
-            }
-        }
-        if (addr != -1) {
-            // get current value from memory
-            value = memory.fetch(addr).toInt()
-        }
         // shift left by 1
-        value = value shl 1
-        val byteValue = value.toUByte()
+        val result: Int = value.toInt() shl 1
+        val byteResult = result.toUByte()
         // save bit 8 in the carry flag...
-        registers.C = value and 0x100 == 0x100
-        registers.setZeroFlagFromValue(byteValue)
-        registers.setNegativeFlagFromValue(byteValue)
-
-        // write back result
-        when (cpu.currentOpcode.toInt()) {
-            0x06, 0x0E -> {
-                // push value back to memory
-                memory.push(addr, byteValue)
-            }
-            0x0A -> {
-                registers.A = byteValue
-            }
-        }
+        registers.C = result and 0x100 == 0x100
+        registers.setZeroFlagFromValue(byteResult)
+        registers.setNegativeFlagFromValue(byteResult)
+        return byteResult
     }
 
     /**
      * Logical Shift Right
      */
-    private fun opLSR() {
+    private fun opLSR(value: UByte): UByte {
         // todo: switch for 5 addressing modes...
-        var value: UByte = 0u
-        var addr = -1
-        // get value/address
-        when (cpu.currentOpcode.toInt()) {
-            0x46 -> {
-                // addressing mode: zeropage
-                // cycles: 5
-                registers.cycles += 5
-                // get zeropage address
-                addr = memory.fetchZeroPageAddressWithPC()
-            }
-            0x4A -> {
-                // addressing mode: accumulator
-                // cycles: 2
-                registers.cycles += 2
-                value = registers.A
-            }
-            0x4E -> {
-                // addressing mode: absolute
-                // cycles: 6
-                registers.cycles += 6
-                // get zeropage address
-                addr = memory.fetchWordWithPC()
-            }
-        }
-        if (addr != -1) {
-            // get current value from memory
-            value = memory.fetch(addr)
-        }
         // save bit 0 in the carry flag...
         registers.C = value.toInt() and 0x01 == 0x01
         // shift right by 1
-        value = (value.toInt() shr 1).toUByte()
-        registers.setZeroFlagFromValue(value)
+        val byteResult = (value.toInt() shr 1).toUByte()
+        registers.setZeroFlagFromValue(byteResult)
         // negative flag always 0 after this operation
         registers.N = false
-
-        // write back result
-        when (cpu.currentOpcode.toInt()) {
-            0x46, 0x4E -> {
-                memory.push(addr, value)
-            }
-            0x4A -> {
-                registers.A = value
-            }
-        }
-    }
-
-    private fun fetchValueAndIncCycles() {
-
+        return byteResult
     }
 }

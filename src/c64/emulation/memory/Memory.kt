@@ -327,6 +327,7 @@ class Memory {
         return wordFromLoHi(lo, hi)
     }
 
+    // TODO: rename push to store...
     /**
      * Pushes a single byte at the given address.
      */
