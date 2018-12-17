@@ -1,8 +1,11 @@
-package c64.emulation
+package c64.emulation.cpu
 
+import c64.emulation.C64ExecutionException
+import c64.emulation.Registers
 import c64.emulation.disassemble.Disassembly
-import c64.emulation.instructionset.*
-import c64.emulation.instructionset.Stack
+import c64.emulation.cpu.instructionset.*
+import c64.emulation.cpu.instructionset.Stack
+import c64.emulation.memory.Memory
 import c64.util.toHex
 import mu.KotlinLogging
 import java.util.*

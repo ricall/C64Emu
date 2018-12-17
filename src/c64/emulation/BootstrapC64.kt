@@ -1,5 +1,7 @@
 package c64.emulation
 
+import c64.emulation.cpu.CPU
+import c64.emulation.memory.Memory
 import mu.KLogging
 import org.apache.log4j.BasicConfigurator
 import org.apache.log4j.ConsoleAppender

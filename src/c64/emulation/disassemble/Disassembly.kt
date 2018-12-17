@@ -1,8 +1,9 @@
 package c64.emulation.disassemble
 
 import c64.emulation.C64ExecutionException
-import c64.emulation.Memory
+import c64.emulation.memory.Memory
 import c64.emulation.Registers
+import c64.emulation.cpu.AddressingMode
 import c64.util.toHex
 import c64.util.toUnprefixedHex
 
@@ -15,14 +16,6 @@ import c64.util.toUnprefixedHex
 class Disassembly(private var registers: Registers, private var memory: Memory) {
 
     class DisassembleInfo(val op: String, val addrMode: AddressingMode)
-
-    enum class AddressingMode(val numByte: Int) {
-        Implied(1), ZeroPage(2), ZeroPageX(2), ZeroPageY(2),
-        Immediate(2), Relative(2), Indirect(3),
-        Absolute(3), AbsoluteX(3), AbsoluteY(3),
-        IndirectIndexedY(2), IndexedIndirectX(2)
-
-    }
 
     companion object {
         // table with all debugging methods indexed with their opcode

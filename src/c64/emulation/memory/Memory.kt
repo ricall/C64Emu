@@ -1,5 +1,6 @@
-package c64.emulation
+package c64.emulation.memory
 
+import c64.emulation.Registers
 import c64.util.toHex
 import c64.util.toUnprefixedHex
 import mu.KotlinLogging
@@ -81,9 +82,17 @@ class Memory {
         logger.info { "init Memory with size of <$MEM_SIZE> byte." }
         mem = UByteArray(MEM_SIZE)
         logger.info { "loading kernal" }
-        load(KERNAL_FILE, KERNAL_OFFSET, KERNAL_SIZE)
+        load(
+            KERNAL_FILE,
+            KERNAL_OFFSET,
+            KERNAL_SIZE
+        )
         logger.info { "loading basic" }
-        load(BASIC_FILE, BASIC_OFFSET, BASIC_SIZE)
+        load(
+            BASIC_FILE,
+            BASIC_OFFSET,
+            BASIC_SIZE
+        )
     }
 
     @Suppress("unused")
@@ -357,9 +366,15 @@ class Memory {
      */
     fun pushWordToStack(word: Int) {
         // little-endian (Lo-Hi)
-        push(STACK_OFFSET + registers.SP.toInt(), hiByteFromWord(word))
+        push(
+            STACK_OFFSET + registers.SP.toInt(),
+            hiByteFromWord(word)
+        )
         registers.SP--
-        push(STACK_OFFSET + registers.SP.toInt(), loByteFromWord(word))
+        push(
+            STACK_OFFSET + registers.SP.toInt(),
+            loByteFromWord(word)
+        )
         registers.SP--
     }
 
