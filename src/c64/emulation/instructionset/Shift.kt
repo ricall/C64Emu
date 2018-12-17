@@ -15,10 +15,13 @@ class Shift(private var cpu: CPU, private var registers: Registers, @Suppress("u
     init {
         cpu.registerInstruction(0x06, ::opASL)
         cpu.registerInstruction(0x0A, ::opASL)
+        cpu.registerInstruction(0x0E, ::opASL)
         cpu.registerInstruction(0x26, ::opROL)
         cpu.registerInstruction(0x2A, ::opROL)
         cpu.registerInstruction(0x46, ::opLSR)
         cpu.registerInstruction(0x4A, ::opLSR)
+        cpu.registerInstruction(0x4E, ::opLSR)
+        cpu.registerInstruction(0x66, ::opROR)
         cpu.registerInstruction(0x6A, ::opROR)
     }
 
@@ -70,7 +73,26 @@ class Shift(private var cpu: CPU, private var registers: Registers, @Suppress("u
      */
     private fun opROR() {
         // todo: switch for 5 addressing modes...
+        var result = 0
         when (cpu.currentOpcode.toInt()) {
+            0x66 -> {
+                // addressing mode: zeropage
+                // cycles: 5
+                registers.cycles += 5
+                // save carry
+                val carry = registers.C
+                val addr = memory.fetchZeroPageAddressWithPC()
+                result = memory.fetch(addr).toInt()
+                // move bit 0 in the carry flag...
+                registers.C = result and 0x01 == 0x01
+                // shift right by 1
+                result = result shr 1
+                // fill bit 7 with the saved value of the carry flag
+                if (carry) {
+                    result = result or 0b1000_0000
+                }
+                memory.push(addr, result.toUByte())
+            }
             0x6A -> {
                 // addressing mode: accumulator
                 // cycles: 2
@@ -80,7 +102,7 @@ class Shift(private var cpu: CPU, private var registers: Registers, @Suppress("u
                 // move bit 0 in the carry flag...
                 registers.C = registers.A.toInt() and 0x01 == 0x01
                 // shift right by 1
-                var result = registers.A.toInt() shr 1
+                result = registers.A.toInt() shr 1
                 // fill bit 7 with the saved value of the carry flag
                 if (carry) {
                     result = result or 0b1000_0000
@@ -88,8 +110,8 @@ class Shift(private var cpu: CPU, private var registers: Registers, @Suppress("u
                 registers.A = result.toUByte()
             }
         }
-        registers.setZeroFlagFromValue(registers.A)
-        registers.setNegativeFlagFromValue(registers.A)
+        registers.setZeroFlagFromValue(result.toUByte())
+        registers.setNegativeFlagFromValue(result.toUByte())
     }
 
     /**
@@ -120,6 +142,18 @@ class Shift(private var cpu: CPU, private var registers: Registers, @Suppress("u
                 // save bit 8 in the carry flag...
                 registers.C = result and 0x100 == 0x100
                 registers.A = result.toUByte()
+            }
+            0x0E -> {
+                // addressing mode: absolute
+                // cycles: 6
+                registers.cycles += 6
+                val addr = memory.fetchWordWithPC()
+                // shift left by 1
+                result = memory.fetch(addr).toInt() shl 1
+                // save bit 8 in the carry flag...
+                registers.C = result and 0x100 == 0x100
+                // push value back to zeropage address
+                memory.push(addr, result.toUByte())
             }
         }
         registers.setZeroFlagFromValue(result.toUByte())
@@ -156,6 +190,20 @@ class Shift(private var cpu: CPU, private var registers: Registers, @Suppress("u
                 // shift right by 1
                 result = (registers.A.toInt() shr 1).toUByte()
                 registers.A = result
+            }
+            0x4E -> {
+                // addressing mode: absolute
+                // cycles: 6
+                registers.cycles += 6
+                // get zeropage address
+                val addr = memory.fetchWordWithPC()
+                // save current value from zeropage
+                result = memory.fetch(addr)
+                // save bit 0 in the carry flag...
+                registers.C = result.toInt() and 0x01 == 0x01
+                // shift right by 1
+                result = (result.toInt() shr 1).toUByte()
+                memory.push(addr, result)
             }
         }
         registers.setZeroFlagFromValue(result)
