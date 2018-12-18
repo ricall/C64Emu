@@ -16,8 +16,9 @@ class Logical(private var cpu: CPU, private var registers: Registers, private va
         cpu.registerInstruction(0x09, ::opORA)
         cpu.registerInstruction(0x0D, ::opORA)
         cpu.registerInstruction(0x24, ::opBIT)
-        cpu.registerInstruction(0x2C, ::opBIT)
+        cpu.registerInstruction(0x25, ::opAND)
         cpu.registerInstruction(0x29, ::opAND)
+        cpu.registerInstruction(0x2C, ::opBIT)
         cpu.registerInstruction(0x49, ::opEOR)
         cpu.registerInstruction(0x55, ::opEOR)
     }
@@ -28,6 +29,12 @@ class Logical(private var cpu: CPU, private var registers: Registers, private va
     private fun opAND() {
         // todo: switch for 8 addressing modes...
         when (cpu.currentOpcode.toInt()) {
+            0x25 -> {
+                // addressing mode: zeropage
+                // cycles: 3
+                registers.cycles += 3
+                registers.A = registers.A and memory.fetchZeroPageWithPC()
+            }
             0x29 -> {
                 // addressing mode: immediate
                 // cycles: 2

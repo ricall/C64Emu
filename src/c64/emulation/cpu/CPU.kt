@@ -2,13 +2,11 @@ package c64.emulation.cpu
 
 import c64.emulation.C64ExecutionException
 import c64.emulation.Registers
-import c64.emulation.disassemble.Disassembly
 import c64.emulation.cpu.instructionset.*
-import c64.emulation.cpu.instructionset.Stack
+import c64.emulation.disassemble.Disassembly
 import c64.emulation.memory.Memory
 import c64.util.toHex
 import mu.KotlinLogging
-import java.util.*
 
 private val logger = KotlinLogging.logger {}
 
@@ -45,8 +43,6 @@ class CPU(private var registers: Registers, private var memory: Memory) {
     private var printDisassembledCode: Boolean = false
     // debug mode after breakpoint reached
     private var debugging = false
-
-    private val scanner = Scanner(java.lang.System.`in`)
 
     private var numOps = 0
 
@@ -101,7 +97,7 @@ class CPU(private var registers: Registers, private var memory: Memory) {
         //val breakpoint = 0xFF5E
         val breakpoint = 0x0000
         //val startDisassembleAt = 0xB6E1  // 0xFCE2
-        val startDisassembleAt = 0x2770
+        val startDisassembleAt = 0x2DAA
 
         val machineIsRunning = true
         try {
@@ -112,7 +108,6 @@ class CPU(private var registers: Registers, private var memory: Memory) {
                 }
                 if (debugging) {
                     logger.debug { registers.printRegisters() }
-                    logger.debug { memory.printStackLine() }
                 }
                 // check whether disassembly should be printed
                 printDisassembledCode = printDisassembledCode || registers.PC == startDisassembleAt
@@ -137,7 +132,7 @@ class CPU(private var registers: Registers, private var memory: Memory) {
                 logger.debug(disassembly.disassemble(opcode))
             }
             if (debugging) {
-                scanner.nextLine()
+                disassembly.handleConsoleDebugging()
             }
             if (opCodeInfo is OpCodeInfo) {
                 opCodeInfo.instruction.invoke()
@@ -174,6 +169,9 @@ class CPU(private var registers: Registers, private var memory: Memory) {
             AddressingMode.Absolute -> {
                 addr = memory.fetchWordWithPC()
             }
+            AddressingMode.AbsoluteX -> {
+                addr = memory.fetchWordWithPC() + registers.X.toInt()
+            }
             else -> {
                 addr = 0
                 value = 0u
@@ -189,7 +187,8 @@ class CPU(private var registers: Registers, private var memory: Memory) {
         when (opCodeInfo.addressingMode) {
             AddressingMode.ZeroPage,
             AddressingMode.ZeroPageX,
-            AddressingMode.Absolute -> {
+            AddressingMode.Absolute,
+            AddressingMode.AbsoluteX -> {
                 memory.store(addr, value)
             }
             AddressingMode.Accumulator -> {

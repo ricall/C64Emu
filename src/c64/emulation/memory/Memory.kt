@@ -125,7 +125,7 @@ class Memory {
      * Fetches a single byte from the zero page address stored at PC.
      */
     fun fetchZeroPageWithPC(): UByte {
-        return fetch(fetchWithPC().toInt())
+        return fetch(fetchZeroPageAddressWithPC())
     }
 
     /**
@@ -302,8 +302,7 @@ class Memory {
      */
     fun fetchWordIndirectWithPC(): Int {
         // fetch indirect address from op byte2 + byte3
-        val indirectAddr = fetchWord(registers.PC++)
-        registers.PC++
+        val indirectAddr = fetchWordWithPC()
         // fetch lo-byte from indirect address
         val lo = fetch(indirectAddr)
         // increase lo-byte of indirect address by 1 and ignore overflow ($FF+1 = $00)
@@ -395,6 +394,6 @@ class Memory {
 
     @Suppress("unused")
     fun printStackLine(): String {
-        return printMemoryLineWithAddress(STACK_OFFSET + registers.SP.toInt() + 1)
+        return printMemoryLineWithAddress(STACK_OFFSET + registers.SP.toInt() + 1, 0xFF - registers.SP.toInt())
     }
 }

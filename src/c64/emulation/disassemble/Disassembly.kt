@@ -6,6 +6,10 @@ import c64.emulation.Registers
 import c64.emulation.cpu.AddressingMode
 import c64.util.toHex
 import c64.util.toUnprefixedHex
+import mu.KotlinLogging
+import java.util.*
+
+private val logger = KotlinLogging.logger {}
 
 /**
  * Class wich can be used to disassemble code.
@@ -19,11 +23,12 @@ class Disassembly(private var registers: Registers, private var memory: Memory) 
 
     companion object {
         // table with all debugging methods indexed with their opcode
-        val INSTRUCTION_TABLE = arrayOfNulls<DisassembleInfo>(0x100)
+        private val INSTRUCTION_TABLE = arrayOfNulls<DisassembleInfo>(0x100)
+        private val PRINT_MEM_CMD = Regex("^m[0-9a-f]{4}$")
+        private val PRINT_STACK_CMD = Regex("^s$")
     }
 
-    // current opcode
-    private var opcode: UByte = 0x00u
+    private val scanner = Scanner(System.`in`)
 
     init {
         // initialize debug table
@@ -37,8 +42,10 @@ class Disassembly(private var registers: Registers, private var memory: Memory) 
         INSTRUCTION_TABLE[0x10] = DisassembleInfo("BPL", AddressingMode.Relative)
         INSTRUCTION_TABLE[0x16] = DisassembleInfo("ASL", AddressingMode.ZeroPageX)
         INSTRUCTION_TABLE[0x18] = DisassembleInfo("CLC", AddressingMode.Implied)
+        INSTRUCTION_TABLE[0x1E] = DisassembleInfo("ASL", AddressingMode.AbsoluteX)
         INSTRUCTION_TABLE[0x20] = DisassembleInfo("JSR", AddressingMode.Absolute)
         INSTRUCTION_TABLE[0x24] = DisassembleInfo("BIT", AddressingMode.ZeroPage)
+        INSTRUCTION_TABLE[0x25] = DisassembleInfo("AND", AddressingMode.ZeroPage)
         INSTRUCTION_TABLE[0x26] = DisassembleInfo("ROL", AddressingMode.ZeroPage)
         INSTRUCTION_TABLE[0x28] = DisassembleInfo("PLP", AddressingMode.Implied)
         INSTRUCTION_TABLE[0x29] = DisassembleInfo("AND", AddressingMode.Immediate)
@@ -46,7 +53,9 @@ class Disassembly(private var registers: Registers, private var memory: Memory) 
         INSTRUCTION_TABLE[0x2C] = DisassembleInfo("BIT", AddressingMode.Absolute)
         INSTRUCTION_TABLE[0x2E] = DisassembleInfo("ROL", AddressingMode.Absolute)
         INSTRUCTION_TABLE[0x30] = DisassembleInfo("BMI", AddressingMode.Relative)
+        INSTRUCTION_TABLE[0x36] = DisassembleInfo("ROL", AddressingMode.ZeroPageX)
         INSTRUCTION_TABLE[0x38] = DisassembleInfo("SEC", AddressingMode.Implied)
+        INSTRUCTION_TABLE[0x3E] = DisassembleInfo("ROL", AddressingMode.AbsoluteX)
         INSTRUCTION_TABLE[0x40] = DisassembleInfo("RTI", AddressingMode.Implied)
         INSTRUCTION_TABLE[0x46] = DisassembleInfo("LSR", AddressingMode.ZeroPage)
         INSTRUCTION_TABLE[0x48] = DisassembleInfo("PHA", AddressingMode.Implied)
@@ -56,7 +65,9 @@ class Disassembly(private var registers: Registers, private var memory: Memory) 
         INSTRUCTION_TABLE[0x4E] = DisassembleInfo("LSR", AddressingMode.Absolute)
         INSTRUCTION_TABLE[0x50] = DisassembleInfo("BVC", AddressingMode.Relative)
         INSTRUCTION_TABLE[0x55] = DisassembleInfo("EOR", AddressingMode.ZeroPageX)
+        INSTRUCTION_TABLE[0x56] = DisassembleInfo("LSR", AddressingMode.ZeroPageX)
         INSTRUCTION_TABLE[0x58] = DisassembleInfo("CLI", AddressingMode.Implied)
+        INSTRUCTION_TABLE[0x5E] = DisassembleInfo("LSR", AddressingMode.AbsoluteX)
         INSTRUCTION_TABLE[0x60] = DisassembleInfo("RTS", AddressingMode.Implied)
         INSTRUCTION_TABLE[0x65] = DisassembleInfo("ADC", AddressingMode.ZeroPage)
         INSTRUCTION_TABLE[0x66] = DisassembleInfo("ROR", AddressingMode.ZeroPage)
@@ -66,7 +77,9 @@ class Disassembly(private var registers: Registers, private var memory: Memory) 
         INSTRUCTION_TABLE[0x6C] = DisassembleInfo("JMP", AddressingMode.Indirect)
         INSTRUCTION_TABLE[0x6E] = DisassembleInfo("ROR", AddressingMode.Absolute)
         INSTRUCTION_TABLE[0x70] = DisassembleInfo("BVS", AddressingMode.Relative)
+        INSTRUCTION_TABLE[0x76] = DisassembleInfo("ROR", AddressingMode.ZeroPageX)
         INSTRUCTION_TABLE[0x78] = DisassembleInfo("SEI", AddressingMode.Implied)
+        INSTRUCTION_TABLE[0x7E] = DisassembleInfo("ROR", AddressingMode.AbsoluteX)
         INSTRUCTION_TABLE[0x81] = DisassembleInfo("STA", AddressingMode.IndexedIndirectX)
         INSTRUCTION_TABLE[0x84] = DisassembleInfo("STY", AddressingMode.ZeroPage)
         INSTRUCTION_TABLE[0x85] = DisassembleInfo("STA", AddressingMode.ZeroPage)
@@ -111,18 +124,22 @@ class Disassembly(private var registers: Registers, private var memory: Memory) 
         INSTRUCTION_TABLE[0xC1] = DisassembleInfo("CMP", AddressingMode.IndexedIndirectX)
         INSTRUCTION_TABLE[0xC4] = DisassembleInfo("CPY", AddressingMode.ZeroPage)
         INSTRUCTION_TABLE[0xC5] = DisassembleInfo("CMP", AddressingMode.ZeroPage)
+        INSTRUCTION_TABLE[0xC6] = DisassembleInfo("DEC", AddressingMode.ZeroPage)
         INSTRUCTION_TABLE[0xC8] = DisassembleInfo("INY", AddressingMode.Implied)
         INSTRUCTION_TABLE[0xC9] = DisassembleInfo("CMP", AddressingMode.Immediate)
         INSTRUCTION_TABLE[0xC0] = DisassembleInfo("CPY", AddressingMode.Immediate)
         INSTRUCTION_TABLE[0xCA] = DisassembleInfo("DEX", AddressingMode.Implied)
         INSTRUCTION_TABLE[0xCC] = DisassembleInfo("CPY", AddressingMode.Absolute)
         INSTRUCTION_TABLE[0xCD] = DisassembleInfo("CMP", AddressingMode.Absolute)
+        INSTRUCTION_TABLE[0xCE] = DisassembleInfo("DEC", AddressingMode.Absolute)
         INSTRUCTION_TABLE[0xD1] = DisassembleInfo("CMP", AddressingMode.IndirectIndexedY)
         INSTRUCTION_TABLE[0xD5] = DisassembleInfo("CMP", AddressingMode.ZeroPageX)
+        INSTRUCTION_TABLE[0xD6] = DisassembleInfo("DEC", AddressingMode.ZeroPageX)
         INSTRUCTION_TABLE[0xD8] = DisassembleInfo("CLD", AddressingMode.Implied)
         INSTRUCTION_TABLE[0xD9] = DisassembleInfo("CMP", AddressingMode.AbsoluteY)
         INSTRUCTION_TABLE[0xD0] = DisassembleInfo("BNE", AddressingMode.Relative)
         INSTRUCTION_TABLE[0xDD] = DisassembleInfo("CMP", AddressingMode.AbsoluteX)
+        INSTRUCTION_TABLE[0xDE] = DisassembleInfo("DEC", AddressingMode.AbsoluteX)
         INSTRUCTION_TABLE[0xE0] = DisassembleInfo("CPX", AddressingMode.Immediate)
         INSTRUCTION_TABLE[0xE4] = DisassembleInfo("CPX", AddressingMode.ZeroPage)
         INSTRUCTION_TABLE[0xE6] = DisassembleInfo("INC", AddressingMode.ZeroPage)
@@ -130,13 +147,15 @@ class Disassembly(private var registers: Registers, private var memory: Memory) 
         INSTRUCTION_TABLE[0xE9] = DisassembleInfo("SBC", AddressingMode.Immediate)
         INSTRUCTION_TABLE[0xEA] = DisassembleInfo("NOP", AddressingMode.Implied)
         INSTRUCTION_TABLE[0xEC] = DisassembleInfo("CPX", AddressingMode.Absolute)
+        INSTRUCTION_TABLE[0xEE] = DisassembleInfo("INC", AddressingMode.Absolute)
         INSTRUCTION_TABLE[0xF0] = DisassembleInfo("BEQ", AddressingMode.Relative)
+        INSTRUCTION_TABLE[0xF6] = DisassembleInfo("INC", AddressingMode.ZeroPageX)
         INSTRUCTION_TABLE[0xF8] = DisassembleInfo("SED", AddressingMode.Implied)
+        INSTRUCTION_TABLE[0xFE] = DisassembleInfo("INC", AddressingMode.AbsoluteX)
     }
 
     @Throws(C64ExecutionException::class)
     fun disassemble(opcode: UByte): String {
-        this.opcode = opcode
         val info = INSTRUCTION_TABLE[opcode.toInt()]
         if (info != null) {
             val addr = (registers.PC - 1).toUnprefixedHex()
@@ -161,6 +180,23 @@ class Disassembly(private var registers: Registers, private var memory: Memory) 
         }
         else {
             throw C64ExecutionException("Missing disassembly info for opcode $opcode")
+        }
+    }
+
+    fun handleConsoleDebugging() {
+        var gotoNextLine = false
+        while (!gotoNextLine) {
+            val consoleInput = scanner.nextLine()
+            when {
+                consoleInput.matches(PRINT_MEM_CMD) -> {
+                    val addr = consoleInput.substring(1).toInt(16)
+                    logger.debug { memory.printMemoryLineWithAddress(addr) }
+                }
+                consoleInput.matches(PRINT_STACK_CMD) -> {
+                    logger.debug { memory.printStackLine() }
+                }
+                else -> gotoNextLine = true
+            }
         }
     }
 

@@ -17,23 +17,29 @@ class Shift(cpu: CPU, private var registers: Registers, @Suppress("unused") priv
         cpu.registerInstruction(0x06, ::opASL, AddressingMode.ZeroPage, 5)
         cpu.registerInstruction(0x0A, ::opASL, AddressingMode.Accumulator, 2)
         cpu.registerInstruction(0x0E, ::opASL, AddressingMode.Absolute, 6)
-        cpu.registerInstruction(0x26, ::opROL, AddressingMode.ZeroPage, 5)
         cpu.registerInstruction(0x16, ::opASL, AddressingMode.ZeroPageX, 6)
+        cpu.registerInstruction(0x1E, ::opASL, AddressingMode.AbsoluteX, 7)
+        cpu.registerInstruction(0x26, ::opROL, AddressingMode.ZeroPage, 5)
         cpu.registerInstruction(0x2A, ::opROL, AddressingMode.Accumulator, 2)
         cpu.registerInstruction(0x2E, ::opROL, AddressingMode.Absolute, 6)
+        cpu.registerInstruction(0x36, ::opROL, AddressingMode.ZeroPageX, 6)
+        cpu.registerInstruction(0x3E, ::opROL, AddressingMode.AbsoluteX, 7)
         cpu.registerInstruction(0x46, ::opLSR, AddressingMode.ZeroPage, 5)
         cpu.registerInstruction(0x4A, ::opLSR, AddressingMode.Accumulator, 2)
         cpu.registerInstruction(0x4E, ::opLSR, AddressingMode.Absolute, 6)
+        cpu.registerInstruction(0x56, ::opLSR, AddressingMode.ZeroPageX, 6)
+        cpu.registerInstruction(0x5E, ::opLSR, AddressingMode.AbsoluteX, 7)
         cpu.registerInstruction(0x66, ::opROR, AddressingMode.ZeroPage, 5)
         cpu.registerInstruction(0x6A, ::opROR, AddressingMode.Accumulator, 2)
         cpu.registerInstruction(0x6E, ::opROR, AddressingMode.Absolute, 6)
+        cpu.registerInstruction(0x76, ::opROR, AddressingMode.ZeroPageX, 6)
+        cpu.registerInstruction(0x7E, ::opROR, AddressingMode.AbsoluteX, 7)
     }
 
     /**
      * Rotate Left.
      */
     private fun opROL(value: UByte): UByte {
-        // todo: switch for 5 addressing modes...
         // shift left by 1
         var result = value.toInt() shl 1
         // fill bit 0 with the value of the carry flag
@@ -52,7 +58,6 @@ class Shift(cpu: CPU, private var registers: Registers, @Suppress("unused") priv
      * Rotate Right.
      */
     private fun opROR(value: UByte): UByte {
-        // todo: switch for 5 addressing modes...
         // save carry
         val carry = registers.C
         // move bit 0 in the carry flag...
@@ -73,7 +78,6 @@ class Shift(cpu: CPU, private var registers: Registers, @Suppress("unused") priv
      * Arithmetic Shift Left.
      */
     private fun opASL(value: UByte): UByte {
-        // todo: switch for 5 addressing modes...
         // shift left by 1
         val result: Int = value.toInt() shl 1
         val byteResult = result.toUByte()
@@ -88,7 +92,6 @@ class Shift(cpu: CPU, private var registers: Registers, @Suppress("unused") priv
      * Logical Shift Right
      */
     private fun opLSR(value: UByte): UByte {
-        // todo: switch for 5 addressing modes...
         // save bit 0 in the carry flag...
         registers.C = value.toInt() and 0x01 == 0x01
         // shift right by 1
