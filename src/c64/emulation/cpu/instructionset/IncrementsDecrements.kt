@@ -15,17 +15,17 @@ class IncrementsDecrements(cpu: CPU, private var registers: Registers, memory: M
 
     init {
         cpu.registerInstruction(0x88, ::opDEY)
-        cpu.registerInstruction(0xC6, ::opDEC, AddressingMode.ZeroPage, 5)
+        cpu.registerInstructionWithResult(0xC6, ::opDEC, AddressingMode.ZeroPage, 5)
         cpu.registerInstruction(0xC8, ::opINY)
         cpu.registerInstruction(0xCA, ::opDEX)
-        cpu.registerInstruction(0xCE, ::opDEC, AddressingMode.Absolute, 6)
-        cpu.registerInstruction(0xD6, ::opDEC, AddressingMode.ZeroPageX, 6)
-        cpu.registerInstruction(0xDE, ::opDEC, AddressingMode.AbsoluteX, 7)
-        cpu.registerInstruction(0xE6, ::opINC, AddressingMode.ZeroPage, 5)
+        cpu.registerInstructionWithResult(0xCE, ::opDEC, AddressingMode.Absolute, 6)
+        cpu.registerInstructionWithResult(0xD6, ::opDEC, AddressingMode.ZeroPageX, 6)
+        cpu.registerInstructionWithResult(0xDE, ::opDEC, AddressingMode.AbsoluteX, 7)
+        cpu.registerInstructionWithResult(0xE6, ::opINC, AddressingMode.ZeroPage, 5)
         cpu.registerInstruction(0xE8, ::opINX)
-        cpu.registerInstruction(0xEE, ::opINC, AddressingMode.Absolute, 6)
-        cpu.registerInstruction(0xF6, ::opINC, AddressingMode.ZeroPageX, 6)
-        cpu.registerInstruction(0xFE, ::opINC, AddressingMode.AbsoluteX, 7)
+        cpu.registerInstructionWithResult(0xEE, ::opINC, AddressingMode.Absolute, 6)
+        cpu.registerInstructionWithResult(0xF6, ::opINC, AddressingMode.ZeroPageX, 6)
+        cpu.registerInstructionWithResult(0xFE, ::opINC, AddressingMode.AbsoluteX, 7)
     }
 
     /**

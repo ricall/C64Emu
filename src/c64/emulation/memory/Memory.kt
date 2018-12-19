@@ -11,6 +11,7 @@ private val logger = KotlinLogging.logger {}
 
 /**
  * Class which encapsulates all operations on memory.
+ * todo: bank switching:  https://www.c64-wiki.com/wiki/Bank_Switching
  *
  * @author Daniel Schulte 2017-2018
  */
