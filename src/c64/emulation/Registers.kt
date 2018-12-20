@@ -106,12 +106,13 @@ class Registers {
     }
 
     internal fun setNegativeFlagFromValue(byte: UByte) {
-        N = byte > 127u
+        N = byte > 0x7Fu
     }
 
-    internal fun setOverflowFlagFromValue(byte: UByte) {
-        // TODO: how to set the V flag correctly... (Set if sign bit is incorrect????)
-        V = false
+    internal fun setOverflowFlagFromValue(oldByte: UByte, newByte: UByte) {
+        // check for change of sign bit
+        val signBit = oldByte > 0b0111_1111u
+        V = signBit != (newByte > 0b0111_1111u)
     }
 
     internal fun printRegisters(): String {

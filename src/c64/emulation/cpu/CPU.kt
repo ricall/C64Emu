@@ -3,6 +3,7 @@ package c64.emulation.cpu
 import c64.emulation.C64ExecutionException
 import c64.emulation.Registers
 import c64.emulation.cpu.instructionset.*
+import c64.emulation.debugger.Debugger
 import c64.emulation.disassemble.Disassembly
 import c64.emulation.memory.Memory
 import c64.util.toHex
@@ -41,32 +42,30 @@ class CPU(private var registers: Registers, private var memory: Memory) {
         const val RESET_VECTOR: Int = 0xFFFC
         // table with all instructions methods indexed with their opcode
         private val INSTRUCTION_TABLE = arrayOfNulls<Any>(0x100)
-        // kernel entry point: $FCE2
-        private const val BREAKPOINT = 0x0000
-        private const val START_DISASSEMBLER_AT = 0x308F
     }
 
     private var disassembly: Disassembly
+    private var debugger: Debugger
 
     // currently executed opcode
     internal var currentOpcode: UByte = 0x00u
 
-    // should the executed code printed as disassembly
-    private var printDisassembledCode: Boolean = false
-    // debug mode after breakpoint reached
-    private var debugging = false
-
-    private var numOps = 0
+    private var numRegisteredOps = 0
 
     init {
         logger.info { "init CPU 6510/8500" }
         disassembly = Disassembly(registers, memory)
+        debugger = Debugger(registers, memory, disassembly)
+
+        disassembly.startDisassemblerAt = 0x0000 //0x3341
+        debugger.breakpoint = 0x0000 //0x3341
+        debugger.waitForCycle = 451_300
 
         // initialize instructions table
         val instructions = arrayOf(::IncrementsDecrements, ::RegisterTransfers, ::LoadStore, ::JumpsCalls,
             ::Arithmetic, ::Logical, ::Branch, ::Stack, ::StatusFlags, ::Shift, ::System)
         instructions.forEach { it(this, registers, memory) }
-        logger.debug {"$numOps opCodes registered"}
+        logger.debug {"$numRegisteredOps opCodes registered"}
     }
 
     /**
@@ -78,7 +77,7 @@ class CPU(private var registers: Registers, private var memory: Memory) {
             throw IllegalArgumentException("Duplicate registration of opcode <${opCode.toUByte().toHex()}> !")
         }
         INSTRUCTION_TABLE[opCode] = OpCodeInfo(instruction)
-        numOps++
+        numRegisteredOps++
     }
 
     /**
@@ -91,7 +90,7 @@ class CPU(private var registers: Registers, private var memory: Memory) {
             throw IllegalArgumentException("Duplicate registration of opcode <${opCode.toUByte().toHex()}> !")
         }
         INSTRUCTION_TABLE[opCode] = OpCodeInfoWithArg(instruction, addressingMode, cycles)
-        numOps++
+        numRegisteredOps++
     }
 
     /**
@@ -104,7 +103,7 @@ class CPU(private var registers: Registers, private var memory: Memory) {
             throw IllegalArgumentException("Duplicate registration of opcode <${opCode.toUByte().toHex()}> !")
         }
         INSTRUCTION_TABLE[opCode] = OpCodeInfoWithArgAndResult(instruction, addressingMode, cycles)
-        numOps++
+        numRegisteredOps++
     }
 
     fun reset() {
@@ -113,23 +112,13 @@ class CPU(private var registers: Registers, private var memory: Memory) {
     }
 
     fun runMachine() {
-
-        // http://unusedino.de/ec64/technical/aay/c64/krnromma.htm
-        // https://www.c64-wiki.de/wiki/%C3%9Cbersicht_6502-Assemblerbefehle
-        // http://www.obelisk.me.uk/6502/instructions.html
-
         val machineIsRunning = true
         try {
             while (machineIsRunning) {
-                if (registers.PC == BREAKPOINT) {
-                    debugging = true
-                    printDisassembledCode = true
-                }
-                if (debugging) {
-                    logger.debug { registers.printRegisters() }
-                }
-                // check whether disassembly should be printed
-                printDisassembledCode = printDisassembledCode || registers.PC == START_DISASSEMBLER_AT
+                // check debugging status, maybe print registers
+                debugger.checkStatus()
+                // check disassembly status
+                disassembly.checkStatus()
                 // fetch byte from memory
                 currentOpcode = memory.fetchWithPC()
                 // decode and run opcode
@@ -147,12 +136,10 @@ class CPU(private var registers: Registers, private var memory: Memory) {
         val opCodeInfo = INSTRUCTION_TABLE[opcode.toInt()]
         if (opCodeInfo != null) {
             // print disassembled code
-            if (logger.isDebugEnabled && printDisassembledCode) {
+            if (logger.isDebugEnabled && disassembly.printDisassembledCode) {
                 logger.debug(disassembly.disassemble(opcode))
             }
-            if (debugging) {
-                disassembly.handleConsoleDebugging()
-            }
+            debugger.handleConsoleDebugging()
             if (opCodeInfo is OpCodeInfo) {
                 opCodeInfo.instruction.invoke()
             }

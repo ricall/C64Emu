@@ -3,6 +3,7 @@ package c64.emulation.cpu.instructionset
 import c64.emulation.cpu.CPU
 import c64.emulation.memory.Memory
 import c64.emulation.Registers
+import c64.emulation.cpu.AddressingMode
 
 /**
  * Class collecting all "Arithmetic" instructions.
@@ -10,84 +11,46 @@ import c64.emulation.Registers
  * @author Daniel Schulte 2017-2018
  */
 @ExperimentalUnsignedTypes
-class Arithmetic(private var cpu: CPU, private var registers: Registers, private var memory: Memory) {
+class Arithmetic(cpu: CPU, private var registers: Registers, private var memory: Memory) {
 
     init {
-        cpu.registerInstruction(0x65, ::opADC)
-        cpu.registerInstruction(0x69, ::opADC)
-        cpu.registerInstruction(0xC4, ::opCPY)
-        cpu.registerInstruction(0xC5, ::opCMP)
-        cpu.registerInstruction(0xC9, ::opCMP)
-        cpu.registerInstruction(0xC0, ::opCPY)
-        cpu.registerInstruction(0xC1, ::opCMP)
-        cpu.registerInstruction(0xCC, ::opCPY)
-        cpu.registerInstruction(0xCD, ::opCMP)
-        cpu.registerInstruction(0xD1, ::opCMP)
-        cpu.registerInstruction(0xD5, ::opCMP)
-        cpu.registerInstruction(0xD9, ::opCMP)
-        cpu.registerInstruction(0xDD, ::opCMP)
-        cpu.registerInstruction(0xE0, ::opCPX)
-        cpu.registerInstruction(0xE4, ::opCPX)
-        cpu.registerInstruction(0xE9, ::opSBC)
-        cpu.registerInstruction(0xEC, ::opCPX)
+        cpu.registerInstruction(0x61, ::opADC, AddressingMode.IndexedIndirectX, 6)
+        cpu.registerInstruction(0x65, ::opADC, AddressingMode.ZeroPage, 3)
+        cpu.registerInstruction(0x69, ::opADC, AddressingMode.Immediate, 2)
+        cpu.registerInstruction(0x6D, ::opADC, AddressingMode.Absolute, 4)
+        cpu.registerInstruction(0x71, ::opADC, AddressingMode.IndirectIndexedY, 5)
+        cpu.registerInstruction(0x75, ::opADC, AddressingMode.ZeroPageX, 4)
+        cpu.registerInstruction(0x79, ::opADC, AddressingMode.AbsoluteY, 4)
+        cpu.registerInstruction(0x7D, ::opADC, AddressingMode.AbsoluteX, 4)
+        cpu.registerInstruction(0xC4, ::opCPY, AddressingMode.ZeroPage, 3)
+        cpu.registerInstruction(0xC5, ::opCMP, AddressingMode.ZeroPage, 3)
+        cpu.registerInstruction(0xC9, ::opCMP, AddressingMode.Immediate, 2)
+        cpu.registerInstruction(0xC0, ::opCPY, AddressingMode.Immediate, 2)
+        cpu.registerInstruction(0xC1, ::opCMP, AddressingMode.IndexedIndirectX, 6)
+        cpu.registerInstruction(0xCC, ::opCPY, AddressingMode.Absolute, 4)
+        cpu.registerInstruction(0xCD, ::opCMP, AddressingMode.Absolute, 4)
+        cpu.registerInstruction(0xD1, ::opCMP, AddressingMode.IndirectIndexedY, 5)
+        cpu.registerInstruction(0xD5, ::opCMP, AddressingMode.ZeroPageX, 4)
+        cpu.registerInstruction(0xD9, ::opCMP, AddressingMode.AbsoluteY, 4)
+        cpu.registerInstruction(0xDD, ::opCMP, AddressingMode.AbsoluteX, 4)
+        cpu.registerInstruction(0xE0, ::opCPX, AddressingMode.Immediate, 2)
+        cpu.registerInstruction(0xE1, ::opSBC, AddressingMode.IndexedIndirectX, 6)
+        cpu.registerInstruction(0xE4, ::opCPX, AddressingMode.ZeroPage, 3)
+        cpu.registerInstruction(0xE5, ::opSBC, AddressingMode.ZeroPage, 3)
+        cpu.registerInstruction(0xE9, ::opSBC, AddressingMode.Immediate, 2)
+        cpu.registerInstruction(0xEC, ::opCPX, AddressingMode.Absolute, 4)
+        cpu.registerInstruction(0xED, ::opSBC, AddressingMode.Absolute, 4)
+        cpu.registerInstruction(0xF1, ::opSBC, AddressingMode.IndirectIndexedY, 5)
+        cpu.registerInstruction(0xFD, ::opSBC, AddressingMode.AbsoluteX, 4)
+        cpu.registerInstruction(0xF5, ::opSBC, AddressingMode.ZeroPageX, 4)
+        cpu.registerInstruction(0xF9, ::opSBC, AddressingMode.AbsoluteY, 4)
     }
 
     /**
      * Compare memory and accumulator
      * http://www.6502.org/tutorials/compare_beyond.html
      */
-    private fun opCMP() {
-        var value: UByte = 0u
-        when (cpu.currentOpcode.toInt()) {
-            0xC1 -> {
-                // addressing mode: (indirect,x)
-                // cycles: 6
-                registers.cycles += 6
-                value = memory.fetchIndexedIndirectXWithPC()
-            }
-            0xC5 -> {
-                // addressing mode: zeropage
-                // cycles: 3
-                registers.cycles += 3
-                value = memory.fetchZeroPageWithPC()
-            }
-            0xC9 -> {
-                // addressing mode: immediate
-                // cycles: 2
-                registers.cycles += 2
-                value = memory.fetchWithPC()
-            }
-            0xCD -> {
-                // addressing mode: absolute
-                // cycles: 4
-                registers.cycles += 4
-                value = memory.fetchAbsoluteWithPC()
-            }
-            0xD1 -> {
-                // addressing mode: (indirect), y
-                // cycles: 5* (+1 page boundary cross)
-                registers.cycles += 5
-                value = memory.fetchIndirectIndexedYWithPC()
-            }
-            0xD5 -> {
-                // addressing mode: zeropage, x
-                // cycles: 4
-                registers.cycles += 4
-                value = memory.fetchZeroPageXWithPC()
-            }
-            0xD9 -> {
-                // addressing mode: absolute, y
-                // cycles: 4* (+1 page boundary cross)
-                registers.cycles += 4
-                value = memory.fetchAbsoluteYWithPC()
-            }
-            0xDD -> {
-                // addressing mode: absolute, x
-                // cycles: 4* (+1 page boundary cross)
-                registers.cycles += 4
-                value = memory.fetchAbsoluteXWithPC()
-            }
-        }
+    private fun opCMP(value: UByte) {
         val compareResult: UByte = (registers.A - value).toUByte()
         registers.setZeroFlagFromValue(compareResult)
         registers.setNegativeFlagFromValue(compareResult)
@@ -97,28 +60,7 @@ class Arithmetic(private var cpu: CPU, private var registers: Registers, private
     /**
      * Compare X Register
      */
-    private fun opCPX() {
-        var value: UByte = 0u
-        when (cpu.currentOpcode.toInt()) {
-            0xE4 -> {
-                // addressing mode: zeropage
-                // cycles: 3
-                value = memory.fetchZeroPageWithPC()
-                registers.cycles += 3
-            }
-            0xE0 -> {
-                // addressing mode: immediate
-                // cycles: 2
-                value = memory.fetchWithPC()
-                registers.cycles += 2
-            }
-            0xEC -> {
-                // addressing mode: absolute
-                // cycles: 4
-                value = memory.fetchAbsoluteWithPC()
-                registers.cycles += 4
-            }
-        }
+    private fun opCPX(value: UByte) {
         val compareResult: UByte = (registers.X - value).toUByte()
         registers.setZeroFlagFromValue(compareResult)
         registers.setNegativeFlagFromValue(compareResult)
@@ -128,28 +70,7 @@ class Arithmetic(private var cpu: CPU, private var registers: Registers, private
     /**
      * Compare X Register
      */
-    private fun opCPY() {
-        var value: UByte = 0u
-        when (cpu.currentOpcode.toInt()) {
-            0xC4 -> {
-                // addressing mode: zeropage
-                // cycles: 3
-                value = memory.fetchZeroPageWithPC()
-                registers.cycles += 3
-            }
-            0xC0 -> {
-                // addressing mode: immediate
-                // cycles: 2
-                value = memory.fetchWithPC()
-                registers.cycles += 2
-            }
-            0xCC -> {
-                // addressing mode: absolute
-                // cycles: 4
-                value = memory.fetchAbsoluteWithPC()
-                registers.cycles += 4
-            }
-        }
+    private fun opCPY(value: UByte) {
         val compareResult: UByte = (registers.Y - value).toUByte()
         registers.setZeroFlagFromValue(compareResult)
         registers.setNegativeFlagFromValue(compareResult)
@@ -159,68 +80,30 @@ class Arithmetic(private var cpu: CPU, private var registers: Registers, private
     /**
      * Add with Carry
      */
-    private fun opADC() {
+    private fun opADC(value: UByte) {
         // TODO: add BCD arithmetic if decimal flag is set
-        // todo: switch for 8 addressing modes...
-        val value: UByte
-        when (cpu.currentOpcode.toInt()) {
-            0x65 -> {
-                // addressing mode: zeropage
-                // cycles: 3
-                value = memory.fetchZeroPageWithPC()
-                registers.cycles += 3
-            }
-            0x69 -> {
-                // addressing mode: immediate
-                // cycles: 2
-                value = memory.fetchWithPC()
-                registers.cycles += 2
-            }
-            else -> {
-                value = 0u
-            }
-        }
         val carry: UByte = if (registers.C) 1u else 0u
         val result: UInt = registers.A + value + carry
+        val oldValue = registers.A
         registers.A = result.toUByte()
         registers.C = result > 0xFFu
         registers.setZeroFlagFromValue(registers.A)
         registers.setNegativeFlagFromValue(registers.A)
-        registers.setOverflowFlagFromValue(registers.A)
+        registers.setOverflowFlagFromValue(oldValue, registers.A)
     }
 
     /**
      * Subtract with Carry
      */
-    private fun opSBC() {
+    private fun opSBC(value: UByte) {
         // TODO: add BCD arithmetic if decimal flag is set
-        // todo: switch for 8 addressing modes...
-        val value: UByte
-        when (cpu.currentOpcode.toInt()) {
-            0xE9 -> {
-                // addressing mode: immediate
-                // cycles: 2
-                value = memory.fetchWithPC()
-                registers.cycles += 2
-            }
-            else -> {
-                value = 0u
-            }
-        }
-        // TODO - check this method for correctness!!!!!
         val carry: UByte = if (registers.C) 0u else 1u
         val result: UInt = registers.A - value - carry
-
-        // TODO: test test test
-        //val a: UByte = 0xFEu
-        //val m: UByte = 0xFFu
-        //val r:UInt = a - m
-        //val carryOn = r > 0xFFu
-
+        val oldValue = registers.A
         registers.A = result.toUByte()
-        registers.C = result > 0xFFu
+        registers.C = result <= 0xFFu
         registers.setZeroFlagFromValue(registers.A)
         registers.setNegativeFlagFromValue(registers.A)
-        registers.setOverflowFlagFromValue(registers.A)
+        registers.setOverflowFlagFromValue(oldValue, registers.A)
     }
 }

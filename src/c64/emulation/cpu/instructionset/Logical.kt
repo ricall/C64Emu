@@ -11,11 +11,17 @@ import c64.emulation.cpu.AddressingMode
  * @author Daniel Schulte 2017-2018
  */
 @ExperimentalUnsignedTypes
-class Logical(private var cpu: CPU, private var registers: Registers, private var memory: Memory) {
+class Logical(cpu: CPU, private var registers: Registers, private var memory: Memory) {
 
     init {
+        cpu.registerInstruction(0x01, ::opORA, AddressingMode.IndexedIndirectX, 6)
+        cpu.registerInstruction(0x05, ::opORA, AddressingMode.ZeroPage, 3)
         cpu.registerInstruction(0x09, ::opORA, AddressingMode.Immediate, 2)
         cpu.registerInstruction(0x0D, ::opORA, AddressingMode.Absolute, 4)
+        cpu.registerInstruction(0x11, ::opORA, AddressingMode.IndirectIndexedY, 5)
+        cpu.registerInstruction(0x15, ::opORA, AddressingMode.ZeroPageX, 4)
+        cpu.registerInstruction(0x19, ::opORA, AddressingMode.AbsoluteY, 4)
+        cpu.registerInstruction(0x1D, ::opORA, AddressingMode.AbsoluteX, 4)
         cpu.registerInstruction(0x21, ::opAND, AddressingMode.IndexedIndirectX, 6)
         cpu.registerInstruction(0x24, ::opBIT, AddressingMode.ZeroPage, 3)
         cpu.registerInstruction(0x25, ::opAND, AddressingMode.ZeroPage, 3)
@@ -26,9 +32,11 @@ class Logical(private var cpu: CPU, private var registers: Registers, private va
         cpu.registerInstruction(0x35, ::opAND, AddressingMode.ZeroPageX, 4)
         cpu.registerInstruction(0x39, ::opAND, AddressingMode.AbsoluteY, 4)
         cpu.registerInstruction(0x3D, ::opAND, AddressingMode.AbsoluteX, 4)
+        cpu.registerInstruction(0x41, ::opEOR, AddressingMode.IndexedIndirectX, 6)
         cpu.registerInstruction(0x45, ::opEOR, AddressingMode.ZeroPage, 3)
         cpu.registerInstruction(0x49, ::opEOR, AddressingMode.Immediate, 2)
         cpu.registerInstruction(0x4D, ::opEOR, AddressingMode.Absolute, 4)
+        cpu.registerInstruction(0x51, ::opEOR, AddressingMode.IndirectIndexedY, 5)
         cpu.registerInstruction(0x55, ::opEOR, AddressingMode.ZeroPageX, 4)
         cpu.registerInstruction(0x59, ::opEOR, AddressingMode.AbsoluteY, 4)
         cpu.registerInstruction(0x5D, ::opEOR, AddressingMode.AbsoluteX, 4)
@@ -47,7 +55,6 @@ class Logical(private var cpu: CPU, private var registers: Registers, private va
      * Logical Inclusive OR
      */
     private fun opORA(value: UByte) {
-        // todo: switch for 8 addressing modes...
         registers.A = registers.A or value
         registers.setZeroFlagFromValue(registers.A)
         registers.setNegativeFlagFromValue(registers.A)
@@ -57,7 +64,6 @@ class Logical(private var cpu: CPU, private var registers: Registers, private va
      * Exclusive OR
      */
     private fun opEOR(value: UByte) {
-        // todo: switch for 8 addressing modes...
         registers.A = registers.A xor value
         registers.setZeroFlagFromValue(registers.A)
         registers.setNegativeFlagFromValue(registers.A)
