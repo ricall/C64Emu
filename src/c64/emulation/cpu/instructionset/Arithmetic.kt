@@ -11,7 +11,7 @@ import c64.emulation.cpu.AddressingMode
  * @author Daniel Schulte 2017-2018
  */
 @ExperimentalUnsignedTypes
-class Arithmetic(cpu: CPU, private var registers: Registers, private var memory: Memory) {
+class Arithmetic(cpu: CPU, private var registers: Registers, @Suppress("unused") private var memory: Memory) {
 
     init {
         cpu.registerInstruction(0x61, ::opADC, AddressingMode.IndexedIndirectX, 6)
@@ -84,12 +84,12 @@ class Arithmetic(cpu: CPU, private var registers: Registers, private var memory:
         // TODO: add BCD arithmetic if decimal flag is set
         val carry: UByte = if (registers.C) 1u else 0u
         val result: UInt = registers.A + value + carry
-        val oldValue = registers.A
+        val signedResult = registers.A.toByte() + value.toByte() + carry.toByte()
         registers.A = result.toUByte()
         registers.C = result > 0xFFu
         registers.setZeroFlagFromValue(registers.A)
         registers.setNegativeFlagFromValue(registers.A)
-        registers.setOverflowFlagFromValue(oldValue, registers.A)
+        registers.setOverflowFlagFromSignedValue(signedResult)
     }
 
     /**
@@ -99,11 +99,11 @@ class Arithmetic(cpu: CPU, private var registers: Registers, private var memory:
         // TODO: add BCD arithmetic if decimal flag is set
         val carry: UByte = if (registers.C) 0u else 1u
         val result: UInt = registers.A - value - carry
-        val oldValue = registers.A
+        val signedResult = registers.A.toByte() - value.toByte() - carry.toByte()
         registers.A = result.toUByte()
         registers.C = result <= 0xFFu
         registers.setZeroFlagFromValue(registers.A)
         registers.setNegativeFlagFromValue(registers.A)
-        registers.setOverflowFlagFromValue(oldValue, registers.A)
+        registers.setOverflowFlagFromSignedValue(signedResult)
     }
 }

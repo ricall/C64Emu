@@ -109,10 +109,9 @@ class Registers {
         N = byte > 0x7Fu
     }
 
-    internal fun setOverflowFlagFromValue(oldByte: UByte, newByte: UByte) {
-        // check for change of sign bit
-        val signBit = oldByte > 0b0111_1111u
-        V = signBit != (newByte > 0b0111_1111u)
+    internal fun setOverflowFlagFromSignedValue(signedValue: Int) {
+        // check for overflow of possible signed values in 2er complement (-128..127)
+        V = signedValue > 127 || signedValue < -128
     }
 
     internal fun printRegisters(): String {

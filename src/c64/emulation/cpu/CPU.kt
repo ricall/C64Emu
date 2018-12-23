@@ -57,9 +57,9 @@ class CPU(private var registers: Registers, private var memory: Memory) {
         disassembly = Disassembly(registers, memory)
         debugger = Debugger(registers, memory, disassembly)
 
-        disassembly.startDisassemblerAt = 0x0000 //0x3341
+        disassembly.startDisassemblerAt = 0x3341
         debugger.breakpoint = 0x0000 //0x3341
-        debugger.waitForCycle = 451_300
+        debugger.waitForCycle = 1_000_000
 
         // initialize instructions table
         val instructions = arrayOf(::IncrementsDecrements, ::RegisterTransfers, ::LoadStore, ::JumpsCalls,
