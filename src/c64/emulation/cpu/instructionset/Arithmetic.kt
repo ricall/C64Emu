@@ -81,29 +81,61 @@ class Arithmetic(cpu: CPU, private var registers: Registers, @Suppress("unused")
      * Add with Carry
      */
     private fun opADC(value: UByte) {
-        // TODO: add BCD arithmetic if decimal flag is set
+        var result: UInt
         val carry: UByte = if (registers.C) 1u else 0u
-        val result: UInt = registers.A + value + carry
-        val signedResult = registers.A.toByte() + value.toByte() + carry.toByte()
+        if (registers.D) {
+            // BCD arithmetic if decimal flag is set
+            // http://www.6502.org/tutorials/decimal_mode.html
+            var loNibble: UInt = (registers.A and 0x0Fu) + (value and 0x0Fu) + carry
+            if (loNibble >= 0x0Au) {
+                loNibble = ((loNibble + 0x06u) and 0x0Fu) + 0x10u
+            }
+            result = (registers.A and 0xF0u) + (value and 0xF0u) + loNibble
+            if (result >= 0xA0u) {
+                result += 0x60u
+            }
+            registers.setOverflowFlagFromSignedValue(result.toInt())
+        }
+        else {
+            // binary arithmetic if decimal flag is not set
+            result = registers.A + value + carry
+            val signedResult = registers.A.toByte() + value.toByte() + carry.toByte()
+            registers.setOverflowFlagFromSignedValue(signedResult)
+        }
         registers.A = result.toUByte()
         registers.C = result > 0xFFu
         registers.setZeroFlagFromValue(registers.A)
         registers.setNegativeFlagFromValue(registers.A)
-        registers.setOverflowFlagFromSignedValue(signedResult)
     }
 
     /**
      * Subtract with Carry
      */
     private fun opSBC(value: UByte) {
-        // TODO: add BCD arithmetic if decimal flag is set
+        var result: UInt
         val carry: UByte = if (registers.C) 0u else 1u
-        val result: UInt = registers.A - value - carry
-        val signedResult = registers.A.toByte() - value.toByte() - carry.toByte()
+        if (registers.D) {
+            // BCD arithmetic if decimal flag is set
+            // http://www.6502.org/tutorials/decimal_mode.html
+            var loNibble = (registers.A and 0x0Fu) - (value and 0x0Fu) - carry
+            if (loNibble < 0u) {
+                loNibble = ((loNibble - 0x06u) and 0x0Fu) - 0x10u
+            }
+            result = (registers.A and 0xF0u) - (value and 0xF0u) + loNibble
+            if (result < 0u ) {
+                result -= 0x60u
+            }
+            // V flag behaviour unclear
+        }
+        else {
+            // binary arithmetic if decimal flag is not set
+            result = registers.A - value - carry
+            val signedResult = registers.A.toByte() - value.toByte() - carry.toByte()
+            registers.setOverflowFlagFromSignedValue(signedResult)
+        }
         registers.A = result.toUByte()
         registers.C = result <= 0xFFu
         registers.setZeroFlagFromValue(registers.A)
         registers.setNegativeFlagFromValue(registers.A)
-        registers.setOverflowFlagFromSignedValue(signedResult)
     }
 }

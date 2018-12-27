@@ -27,7 +27,7 @@ class BootstrapC64 {
         val cpu = CPU(registers, memory)
         cpu.reset()
 
-        // todo: TEST...
+        // TODO: test, see http://visual6502.org/wiki/index.php?title=6502TestPrograms
         memory.loadRom("./roms/6502_functional_test.bin")
         registers.PC = 0x0400
 
