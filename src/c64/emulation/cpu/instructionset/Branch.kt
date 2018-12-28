@@ -24,148 +24,66 @@ class Branch(cpu: CPU, private var registers: Registers, private var memory: Mem
         cpu.registerInstruction(0xF0, ::opBEQ)
     }
 
-    // TODO - move common branching code into one method
     /**
      * Branch if Not Equal (zero flag not set).
      */
     private fun opBNE() {
-        // cycles: 2 (+1 if branch succeeds, +2 if to a new page)
-        registers.cycles += 2
-        // addressing mode: relative
-        if (!registers.Z) {
-            registers.cycles++
-            // attention: relative offset to the current PC is SIGNED!
-            val relativeOffset = memory.fetchWithPC().toByte()
-            val branchAddress = registers.PC + relativeOffset
-            registers.cycles += checkForPageBoundaryCross(registers.PC, branchAddress)
-            registers.PC = branchAddress
-        } else {
-            registers.PC++
-        }
+        branch(!registers.Z)
     }
 
     /**
      * Branch if equal (zero flag set).
      */
     private fun opBEQ() {
-        // cycles: 2 (+1 if branch succeeds, +2 if to a new page)
-        registers.cycles += 2
-        // addressing mode: relative
-        if (registers.Z) {
-            registers.cycles++
-            // attention: relative offset to the current PC is SIGNED!
-            val relativeOffset = memory.fetchWithPC().toByte()
-            val branchAddress = registers.PC + relativeOffset
-            registers.cycles += checkForPageBoundaryCross(registers.PC, branchAddress)
-            registers.PC = branchAddress
-        } else {
-            registers.PC++
-        }
+        branch(registers.Z)
     }
 
     /**
      * Branch if Carry Set.
      */
     private fun opBCS() {
-        // cycles: 2 (+1 if branch succeeds, +2 if to a new page)
-        registers.cycles += 2
-        // addressing mode: relative
-        if (registers.C) {
-            registers.cycles++
-            // attention: relative offset to the current PC is SIGNED!
-            val relativeOffset = memory.fetchWithPC().toByte()
-            val branchAddress = registers.PC + relativeOffset
-            registers.cycles += checkForPageBoundaryCross(registers.PC, branchAddress)
-            registers.PC = branchAddress
-        } else {
-            registers.PC++
-        }
+        branch(registers.C)
     }
 
     /**
      * Branch if Carry Clear.
      */
     private fun opBCC() {
-        // cycles: 2 (+1 if branch succeeds, +2 if to a new page)
-        registers.cycles += 2
-        // addressing mode: relative
-        if (!registers.C) {
-            registers.cycles++
-            // attention: relative offset to the current PC is SIGNED!
-            val relativeOffset = memory.fetchWithPC().toByte()
-            val branchAddress = registers.PC + relativeOffset
-            registers.cycles += checkForPageBoundaryCross(registers.PC, branchAddress)
-            registers.PC = branchAddress
-        } else {
-            registers.PC++
-        }
+        branch(!registers.C)
     }
 
     /**
      * Branch if Positive (negative flag not set).
      */
     private fun opBPL() {
-        // cycles: 2 (+1 if branch succeeds, +2 if to a new page)
-        registers.cycles += 2
-        // addressing mode: relative
-        if (!registers.N) {
-            registers.cycles++
-            // attention: relative offset to the current PC is SIGNED!
-            val relativeOffset = memory.fetchWithPC().toByte()
-            val branchAddress = registers.PC + relativeOffset
-            registers.cycles += checkForPageBoundaryCross(registers.PC, branchAddress)
-            registers.PC = branchAddress
-        } else {
-            registers.PC++
-        }
+        branch(!registers.N)
     }
 
     /**
      * Branch if Minus (negative flag is set).
      */
     private fun opBMI() {
-        // cycles: 2 (+1 if branch succeeds, +2 if to a new page)
-        registers.cycles += 2
-        // addressing mode: relative
-        if (registers.N) {
-            registers.cycles++
-            // attention: relative offset to the current PC is SIGNED!
-            val relativeOffset = memory.fetchWithPC().toByte()
-            val branchAddress = registers.PC + relativeOffset
-            registers.cycles += checkForPageBoundaryCross(registers.PC, branchAddress)
-            registers.PC = branchAddress
-        } else {
-            registers.PC++
-        }
+        branch(registers.N)
     }
 
     /**
      * Branch if overflow flag clear.
      */
     private fun opBVC() {
-        // cycles: 2 (+1 if branch succeeds, +2 if to a new page)
-        registers.cycles += 2
-        // addressing mode: relative
-        if (!registers.V) {
-            registers.cycles++
-            // attention: relative offset to the current PC is SIGNED!
-            val relativeOffset = memory.fetchWithPC().toByte()
-            val branchAddress = registers.PC + relativeOffset
-            registers.cycles += checkForPageBoundaryCross(registers.PC, branchAddress)
-            registers.PC = branchAddress
-        } else {
-            registers.PC++
-        }
+        branch(!registers.V)
     }
 
     /**
      * Branch if overflow flag set.
      */
     private fun opBVS() {
+        branch(registers.V)
+    }
+
+    private fun branch(condition: Boolean) {
         // cycles: 2 (+1 if branch succeeds, +2 if to a new page)
         registers.cycles += 2
-        // addressing mode: relative
-        if (registers.V) {
+        if (condition) {
             registers.cycles++
             // attention: relative offset to the current PC is SIGNED!
             val relativeOffset = memory.fetchWithPC().toByte()
