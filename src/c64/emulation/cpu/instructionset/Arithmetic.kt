@@ -117,12 +117,12 @@ class Arithmetic(cpu: CPU, private var registers: Registers, @Suppress("unused")
         if (registers.D) {
             // BCD arithmetic if decimal flag is set
             // http://www.6502.org/tutorials/decimal_mode.html
-            var loNibble = (registers.A and 0x0Fu) - (value and 0x0Fu) - carry
-            if (loNibble < 0u) {
+            var loNibble: UInt = (registers.A and 0x0Fu) - (value and 0x0Fu) - carry
+            if (loNibble.toByte() < 0) {
                 loNibble = ((loNibble - 0x06u) and 0x0Fu) - 0x10u
             }
             result = (registers.A and 0xF0u) - (value and 0xF0u) + loNibble
-            if (result < 0u ) {
+            if (result.toInt() < 0 ) {
                 result -= 0x60u
             }
             // V flag behaviour unclear
