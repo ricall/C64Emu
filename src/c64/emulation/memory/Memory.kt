@@ -11,7 +11,6 @@ private val logger = KotlinLogging.logger {}
 
 /**
  * Class which encapsulates all operations on memory.
- * todo: bank switching:  https://www.c64-wiki.com/wiki/Bank_Switching
  *
  * @author Daniel Schulte 2017-2018
  */
@@ -74,34 +73,34 @@ class Memory {
         }
     }
 
-    private val mem: UByteArray
+    private val ram: UByteArray
+    private val ioDevicesRam: UByteArray
+    private val basicRom: UByteArray
+    private val kernalRom: UByteArray
+    private val charGenRom: UByteArray
 
     // registers
     internal lateinit var registers: Registers
 
     init {
         logger.info { "init Memory with size of <$MEM_SIZE> byte." }
-        mem = UByteArray(MEM_SIZE)
-        logger.info { "loading kernal" }
-        load(
-            KERNAL_FILE,
-            KERNAL_OFFSET,
-            KERNAL_SIZE
-        )
-        logger.info { "loading basic" }
-        load(
-            BASIC_FILE,
-            BASIC_OFFSET,
-            BASIC_SIZE
-        )
+        ram = UByteArray(MEM_SIZE)
+        ioDevicesRam = UByteArray(4096)
+        charGenRom = UByteArray(4096)
+        basicRom = UByteArray(BASIC_SIZE)
+        kernalRom = UByteArray(KERNAL_SIZE)
+        logger.info { "loading kernal, basic, chargen" }
+        load(kernalRom, KERNAL_FILE, 0, KERNAL_SIZE)
+        load(basicRom, BASIC_FILE, 0, BASIC_SIZE)
+        // TODO: load(charGenRom, CHARGEN_FILE, 0, CHARGEN_SIZE)
     }
 
     @Suppress("unused")
-    fun loadRom(filename: String, address: Int = 0x0000) {
-        load(filename, address, -1)
+    fun loadIntoRam(filename: String, address: Int = 0x0000) {
+        load(ram, filename, address, -1)
     }
 
-    private fun load(filename: String, address: Int, expectedSize: Int) {
+    private fun load(memory: UByteArray, filename: String, address: Int, expectedSize: Int) {
         logger.debug { "loading <$filename> @${address.toHex()}" }
         val file = File(filename)
         if (!file.exists() || (expectedSize > -1 && file.length() != expectedSize.toLong())) {
@@ -109,7 +108,7 @@ class Memory {
         }
 
         val buffer: UByteArray = Files.readAllBytes(file.toPath()).toUByteArray()
-        buffer.copyInto(mem, address)
+        buffer.copyInto(memory, address)
     }
 
     /**
@@ -118,8 +117,21 @@ class Memory {
     fun fetch(address: Int): UByte {
         // todo: later optimization - maybe use @inline
         // todo: check address for access ram or rom
+        // bank switching:  https://www.c64-wiki.com/wiki/Bank_Switching
+        // A: Basic ROM ($A000-$BFFF)
+        // K: Kernal ROM ($E000-$FFFF)
+        // C: CharGen ROM, I/O devices ($D000-$DFFF)
+        // 1. check bit 0-2 of processor port at $01
+        //    x00 : A=RAM, K=RAM, C=RAM
+        //    x01 : A=RAM, K=RAM
+        //    x10 : A=RAM, K=ROM
+        //    x11 : A=ROM, K=ROM
+        //    0xx : C=CharGen ROM (except 000)
+        //    1xx : C=IO
+
+
         // use only bit 0-15, mask out all higher bits
-        return mem[address and 0xFFFF]
+        return ram[address and 0xFFFF]
     }
 
     /**
@@ -160,6 +172,7 @@ class Memory {
      * Fetches a single byte from the given address + X.
      * In case of a page boundary cross the cycle counter will be increased by one!
      */
+    @Suppress("MemberVisibilityCanBePrivate")
     fun fetchAbsoluteX(address: Int): UByte {
         return fetchAbsoluteIndexed(address, registers.X)
     }
@@ -180,6 +193,7 @@ class Memory {
      * Fetches a single byte from the given address + Y.
      * In case of a page boundary cross the cycle counter will be increased by one!
      */
+    @Suppress("MemberVisibilityCanBePrivate")
     fun fetchAbsoluteY(address: Int): UByte {
         return fetchAbsoluteIndexed(address, registers.Y)
     }
@@ -333,7 +347,7 @@ class Memory {
     fun store(address: Int, byte: UByte) {
         // todo: check address for access ram or rom
         // use only bit 0-15, mask out
-        mem[address and 0xFFFF] = byte
+        ram[address and 0xFFFF] = byte
     }
 
     /**
@@ -388,7 +402,7 @@ class Memory {
             if (!memDump.isEmpty()) {
                 memDump += " "
             }
-            memDump += mem[address + i].toUnprefixedHex()
+            memDump += ram[address + i].toUnprefixedHex()
         }
         return memDump
     }

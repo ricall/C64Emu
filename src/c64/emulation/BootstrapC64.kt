@@ -28,8 +28,8 @@ class BootstrapC64 {
         cpu.reset()
 
         // TODO: test, see http://visual6502.org/wiki/index.php?title=6502TestPrograms
-        memory.loadRom("./roms/6502_functional_test.bin")
-        registers.PC = 0x0400
+        //memory.loadIntoRam("./roms/6502_functional_test.bin")
+        //registers.PC = 0x0400
 
         cpu.runMachine()
     }
