@@ -1,17 +1,16 @@
 package c64.emulation.cpu.instructionset
 
-import c64.emulation.cpu.CPU
-import c64.emulation.memory.Memory
-import c64.emulation.cpu.Registers
+import c64.emulation.System.cpu
+import c64.emulation.System.registers
 import c64.emulation.cpu.AddressingMode
 
 /**
  * Class collecting all "Arithmetic" instructions.
  *
- * @author Daniel Schulte 2017-2018
+ * @author Daniel Schulte 2017-2019
  */
 @ExperimentalUnsignedTypes
-class Arithmetic(cpu: CPU, private var registers: Registers, @Suppress("unused") private var memory: Memory) {
+class Arithmetic {
 
     init {
         cpu.registerInstruction(0x61, ::opADC, AddressingMode.IndexedIndirectX, 6)

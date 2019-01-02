@@ -19,4 +19,8 @@ object System {
     internal var vic: VIC = VIC()
     // initialize CPU at last
     internal var cpu: CPU = CPU()
+
+    init {
+        cpu.initialize()
+    }
 }

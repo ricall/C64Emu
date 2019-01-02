@@ -1,17 +1,17 @@
 package c64.emulation.cpu.instructionset
 
-import c64.emulation.cpu.CPU
-import c64.emulation.memory.Memory
+import c64.emulation.System.cpu
+import c64.emulation.System.memory
+import c64.emulation.System.registers
 import c64.emulation.memory.Memory.Companion.checkForPageBoundaryCross
-import c64.emulation.cpu.Registers
 
 /**
  * Class collecting all "Branch" instructions.
  *
- * @author Daniel Schulte 2017-2018
+ * @author Daniel Schulte 2017-2019
  */
 @ExperimentalUnsignedTypes
-class Branch(cpu: CPU, private var registers: Registers, private var memory: Memory) {
+class Branch {
 
     init {
         cpu.registerInstruction(0x10, ::opBPL)

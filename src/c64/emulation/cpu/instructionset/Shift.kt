@@ -1,17 +1,16 @@
 package c64.emulation.cpu.instructionset
 
-import c64.emulation.cpu.CPU
-import c64.emulation.memory.Memory
-import c64.emulation.cpu.Registers
+import c64.emulation.System.cpu
+import c64.emulation.System.registers
 import c64.emulation.cpu.AddressingMode
 
 /**
  * Class collecting all "Shift" instructions.
  *
- * @author Daniel Schulte 2017-2018
+ * @author Daniel Schulte 2017-2019
  */
 @ExperimentalUnsignedTypes
-class Shift(cpu: CPU, private var registers: Registers, @Suppress("unused") private var memory: Memory) {
+class Shift {
 
     init {
         cpu.registerInstructionWithResult(0x06, ::opASL, AddressingMode.ZeroPage, 5)

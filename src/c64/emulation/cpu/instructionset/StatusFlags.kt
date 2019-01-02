@@ -1,16 +1,15 @@
 package c64.emulation.cpu.instructionset
 
-import c64.emulation.cpu.CPU
-import c64.emulation.memory.Memory
-import c64.emulation.cpu.Registers
+import c64.emulation.System.cpu
+import c64.emulation.System.registers
 
 /**
  * Class collecting all "Status flag" instructions.
  *
- * @author Daniel Schulte 2017-2018
+ * @author Daniel Schulte 2017-2019
  */
 @ExperimentalUnsignedTypes
-class StatusFlags(cpu: CPU, private var registers: Registers, @Suppress("unused") private var memory: Memory) {
+class StatusFlags {
 
     init {
         cpu.registerInstruction(0x18, ::opCLC)

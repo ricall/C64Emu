@@ -21,7 +21,7 @@ typealias InstructionWithArg = (value: UByte) -> Unit
 /**
  * Emulator for CPU MOS 6510/8500.
  *
- * @author Daniel Schulte 2017-2018
+ * @author Daniel Schulte 2017-2019
  */
 @ExperimentalUnsignedTypes
 class CPU {
@@ -53,9 +53,12 @@ class CPU {
     private var numRegisteredOps = 0
 
     init {
-        logger.info { "init CPU 6510/8500" }
         disassembly = Disassembly()
         debugger = Debugger(disassembly)
+    }
+
+    fun initialize() {
+        logger.info { "init CPU 6510/8500" }
 
         // ***************
         // functional_test: end 0x3469, timeout 96_241_300
@@ -69,7 +72,7 @@ class CPU {
         // initialize instructions table
         val instructions = arrayOf(::IncrementsDecrements, ::RegisterTransfers, ::LoadStore, ::JumpsCalls,
             ::Arithmetic, ::Logical, ::Branch, ::Stack, ::StatusFlags, ::Shift, ::System)
-        instructions.forEach { it(this, registers, memory) }
+        instructions.forEach { it() }
         logger.debug {"$numRegisteredOps opCodes registered"}
     }
 
