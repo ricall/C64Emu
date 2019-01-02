@@ -19,13 +19,19 @@ class Memory {
 
     companion object {
         const val MEM_SIZE: Int = 65536
+        const val STACK_OFFSET: Int = 0x0100
+
         const val KERNAL_FILE: String = "./roms/kernal"
         const val KERNAL_OFFSET: Int = 0xE000
         const val KERNAL_SIZE: Int = 8192
+
         const val BASIC_FILE: String = "./roms/basic"
         const val BASIC_OFFSET: Int = 0xA000
         const val BASIC_SIZE: Int = 8192
-        const val STACK_OFFSET: Int = 0x0100
+
+        const val CHARGEN_FILE: String = "./roms/chargen"
+        const val CHARGEN_OFFSET: Int = 0xD000
+        const val CHARGEN_SIZE: Int = 4096
 
         /**
          * Creates a Word from the given Hi- and Lo-Byte and returns it as Int.
@@ -85,14 +91,14 @@ class Memory {
     init {
         logger.info { "init Memory with size of <$MEM_SIZE> byte." }
         ram = UByteArray(MEM_SIZE)
-        ioDevicesRam = UByteArray(4096)
-        charGenRom = UByteArray(4096)
+        ioDevicesRam = UByteArray(CHARGEN_SIZE)
+        charGenRom = UByteArray(CHARGEN_SIZE)
         basicRom = UByteArray(BASIC_SIZE)
         kernalRom = UByteArray(KERNAL_SIZE)
         logger.info { "loading kernal, basic, chargen" }
         load(kernalRom, KERNAL_FILE, 0, KERNAL_SIZE)
         load(basicRom, BASIC_FILE, 0, BASIC_SIZE)
-        // TODO: load(charGenRom, CHARGEN_FILE, 0, CHARGEN_SIZE)
+        load(charGenRom, CHARGEN_FILE, 0, CHARGEN_SIZE)
     }
 
     @Suppress("unused")
@@ -116,7 +122,6 @@ class Memory {
      */
     fun fetch(address: Int): UByte {
         // todo: later optimization - maybe use @inline
-        // todo: check address for access ram or rom
         // bank switching:  https://www.c64-wiki.com/wiki/Bank_Switching
         // A: Basic ROM ($A000-$BFFF)
         // K: Kernal ROM ($E000-$FFFF)
@@ -127,11 +132,40 @@ class Memory {
         //    x10 : A=RAM, K=ROM
         //    x11 : A=ROM, K=ROM
         //    0xx : C=CharGen ROM (except 000)
-        //    1xx : C=IO
-
+        //    1xx : C=IO (except 100)
 
         // use only bit 0-15, mask out all higher bits
-        return ram[address and 0xFFFF]
+        var translatedAddress = address and 0xFFFF
+        var mem: UByteArray = ram
+        val processorPort: Int = (ram[0x0001] and 0b0000_0111u).toInt()
+        if (translatedAddress in 0xA000..0xBFFF) {
+            // access Basic-ROM or RAM
+            if (processorPort == 3 || processorPort == 7) {
+                mem = basicRom
+                translatedAddress -= BASIC_OFFSET
+            }
+        }
+        else if (translatedAddress in 0xD000..0xDFFF) {
+            // access CharGen-ROM, I/O devices or RAM
+            if (processorPort in 1..3) {
+                // CharGen ROM
+                mem = charGenRom
+                translatedAddress -= CHARGEN_OFFSET
+            }
+            else if (processorPort > 4) {
+                // I/O devices
+                mem = ioDevicesRam
+                translatedAddress -= CHARGEN_OFFSET
+            }
+        }
+        else if (translatedAddress in 0xE000..0xFFFF) {
+            // access Kernal-ROM or RAM
+            if (processorPort == 2 || processorPort == 3 || processorPort == 6 || processorPort == 7) {
+                mem = kernalRom
+                translatedAddress -= KERNAL_OFFSET
+            }
+        }
+        return mem[translatedAddress]
     }
 
     /**
@@ -345,9 +379,20 @@ class Memory {
      * Stores a single byte at the given address.
      */
     fun store(address: Int, byte: UByte) {
-        // todo: check address for access ram or rom
-        // use only bit 0-15, mask out
-        ram[address and 0xFFFF] = byte
+        // write to memory always in RAM
+        // only check access to I/O devices
+        // for details see fetch() operation
+
+        // use only bit 0-15, mask out all higher bits
+        var translatedAddress = address and 0xFFFF
+        var mem: UByteArray = ram
+        val processorPort: Int = (ram[0x0001] and 0b0000_0111u).toInt()
+        if (translatedAddress in 0xD000..0xDFFF && processorPort > 4) {
+            // write to I/O devices
+            mem = ioDevicesRam
+            translatedAddress -= CHARGEN_OFFSET
+        }
+        mem[translatedAddress] = byte
     }
 
     /**
@@ -402,7 +447,7 @@ class Memory {
             if (!memDump.isEmpty()) {
                 memDump += " "
             }
-            memDump += ram[address + i].toUnprefixedHex()
+            memDump += fetch(address + i).toUnprefixedHex()
         }
         return memDump
     }

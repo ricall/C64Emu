@@ -57,9 +57,13 @@ class CPU(private var registers: Registers, private var memory: Memory) {
         disassembly = Disassembly(registers, memory)
         debugger = Debugger(registers, memory, disassembly)
 
+        // ***************
+        // functional_test: end 0x3469, timeout 96_241_300
+
+        // debugging settings
         disassembly.startDisassemblerAt = 0x0000
-        debugger.breakpoint = 0x0000
-        debugger.waitForCycle = -1 //96_241_300
+        debugger.breakpoint = 0xFF5E
+        debugger.waitForCycle = -1
 
         // initialize instructions table
         val instructions = arrayOf(::IncrementsDecrements, ::RegisterTransfers, ::LoadStore, ::JumpsCalls,
@@ -108,6 +112,10 @@ class CPU(private var registers: Registers, private var memory: Memory) {
 
     fun reset() {
         registers.reset()
+        // hardwired processor port data direction
+        memory.store(0x0000, 0x27u)
+        // hardwired processor port
+        memory.store(0x0001, 0x37u)
         registers.PC = memory.fetchWord(RESET_VECTOR)
     }
 
