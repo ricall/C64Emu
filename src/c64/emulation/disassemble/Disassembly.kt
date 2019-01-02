@@ -1,7 +1,7 @@
 package c64.emulation.disassemble
 
 import c64.emulation.C64ExecutionException
-import c64.emulation.Registers
+import c64.emulation.cpu.Registers
 import c64.emulation.cpu.AddressingMode
 import c64.emulation.memory.Memory
 import c64.util.toHex

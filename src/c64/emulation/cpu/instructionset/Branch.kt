@@ -3,7 +3,7 @@ package c64.emulation.cpu.instructionset
 import c64.emulation.cpu.CPU
 import c64.emulation.memory.Memory
 import c64.emulation.memory.Memory.Companion.checkForPageBoundaryCross
-import c64.emulation.Registers
+import c64.emulation.cpu.Registers
 
 /**
  * Class collecting all "Branch" instructions.

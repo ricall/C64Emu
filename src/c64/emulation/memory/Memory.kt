@@ -1,6 +1,6 @@
 package c64.emulation.memory
 
-import c64.emulation.Registers
+import c64.emulation.cpu.Registers
 import c64.util.toHex
 import c64.util.toUnprefixedHex
 import mu.KotlinLogging

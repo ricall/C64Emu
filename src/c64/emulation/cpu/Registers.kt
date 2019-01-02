@@ -1,4 +1,4 @@
-package c64.emulation
+package c64.emulation.cpu
 
 import c64.util.toBitString
 import c64.util.toUnprefixedHex

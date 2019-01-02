@@ -1,7 +1,6 @@
 package c64.emulation.cpu
 
 import c64.emulation.C64ExecutionException
-import c64.emulation.Registers
 import c64.emulation.cpu.instructionset.*
 import c64.emulation.debugger.Debugger
 import c64.emulation.disassemble.Disassembly

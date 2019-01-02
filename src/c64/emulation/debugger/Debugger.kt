@@ -1,6 +1,6 @@
 package c64.emulation.debugger
 
-import c64.emulation.Registers
+import c64.emulation.cpu.Registers
 import c64.emulation.disassemble.Disassembly
 import c64.emulation.memory.Memory
 import mu.KotlinLogging
