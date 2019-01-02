@@ -1,9 +1,9 @@
 package c64.emulation.disassemble
 
 import c64.emulation.C64ExecutionException
-import c64.emulation.cpu.Registers
+import c64.emulation.System.memory
+import c64.emulation.System.registers
 import c64.emulation.cpu.AddressingMode
-import c64.emulation.memory.Memory
 import c64.util.toHex
 import c64.util.toUnprefixedHex
 
@@ -14,7 +14,7 @@ import c64.util.toUnprefixedHex
  * @author Daniel Schulte 2017-2018
  */
 @ExperimentalUnsignedTypes
-class Disassembly(private var registers: Registers, private var memory: Memory) {
+class Disassembly {
 
     class DisassembleInfo(val op: String, val addrMode: AddressingMode)
 

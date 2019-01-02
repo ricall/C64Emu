@@ -1,6 +1,6 @@
 package c64.emulation.memory
 
-import c64.emulation.cpu.Registers
+import c64.emulation.System.registers
 import c64.util.toHex
 import c64.util.toUnprefixedHex
 import mu.KotlinLogging
@@ -84,9 +84,6 @@ class Memory {
     private val basicRom: UByteArray
     private val kernalRom: UByteArray
     private val charGenRom: UByteArray
-
-    // registers
-    internal lateinit var registers: Registers
 
     init {
         logger.info { "init Memory with size of <$MEM_SIZE> byte." }

@@ -1,8 +1,8 @@
 package c64.emulation.debugger
 
-import c64.emulation.cpu.Registers
+import c64.emulation.System.memory
+import c64.emulation.System.registers
 import c64.emulation.disassemble.Disassembly
-import c64.emulation.memory.Memory
 import mu.KotlinLogging
 import java.util.*
 
@@ -14,7 +14,7 @@ private val logger = KotlinLogging.logger {}
  * @author schulted
  */
 @ExperimentalUnsignedTypes
-class Debugger(private var registers: Registers, private var memory: Memory, private var disassembly: Disassembly) {
+class Debugger(private var disassembly: Disassembly) {
 
     companion object {
         private val PRINT_MEM_CMD = Regex("^m[0-9a-f]{4}$")

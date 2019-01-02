@@ -1,10 +1,11 @@
 package c64.emulation.cpu
 
 import c64.emulation.C64ExecutionException
+import c64.emulation.System.memory
+import c64.emulation.System.registers
 import c64.emulation.cpu.instructionset.*
 import c64.emulation.debugger.Debugger
 import c64.emulation.disassemble.Disassembly
-import c64.emulation.memory.Memory
 import c64.util.toHex
 import mu.KotlinLogging
 
@@ -23,7 +24,7 @@ typealias InstructionWithArg = (value: UByte) -> Unit
  * @author Daniel Schulte 2017-2018
  */
 @ExperimentalUnsignedTypes
-class CPU(private var registers: Registers, private var memory: Memory) {
+class CPU {
 
     private data class OpCodeInfo(val instruction: Instruction)
     private data class OpCodeInfoWithArg(
@@ -53,8 +54,8 @@ class CPU(private var registers: Registers, private var memory: Memory) {
 
     init {
         logger.info { "init CPU 6510/8500" }
-        disassembly = Disassembly(registers, memory)
-        debugger = Debugger(registers, memory, disassembly)
+        disassembly = Disassembly()
+        debugger = Debugger(disassembly)
 
         // ***************
         // functional_test: end 0x3469, timeout 96_241_300
@@ -64,6 +65,7 @@ class CPU(private var registers: Registers, private var memory: Memory) {
         debugger.breakpoint = 0xFF5E
         debugger.waitForCycle = -1
 
+        // todo: remove params
         // initialize instructions table
         val instructions = arrayOf(::IncrementsDecrements, ::RegisterTransfers, ::LoadStore, ::JumpsCalls,
             ::Arithmetic, ::Logical, ::Branch, ::Stack, ::StatusFlags, ::Shift, ::System)
