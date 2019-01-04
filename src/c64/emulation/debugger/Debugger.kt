@@ -19,8 +19,9 @@ class Debugger(private var disassembly: Disassembly) {
     companion object {
         private val PRINT_MEM_CMD = Regex("^m[0-9a-f]{4}$")
         private val PRINT_STACK_CMD = Regex("^s$")
-        private val CONTINUE_RUN = Regex("^c$")
-        private val RUN_NUM_CYCLES = Regex("^cy[0-9]+$")
+        private val CONTINUE_RUN_CMD = Regex("^c$")
+        private val EXIT_CMD = Regex("^x$")
+        private val RUN_NUM_CYCLES_CMD = Regex("^cy[0-9]+$")
     }
 
     // kernel entry point: $FCE2
@@ -60,16 +61,19 @@ class Debugger(private var disassembly: Disassembly) {
                 consoleInput.matches(PRINT_STACK_CMD) -> {
                     logger.debug { memory.printStackLine() }
                 }
-                consoleInput.matches(RUN_NUM_CYCLES) -> {
+                consoleInput.matches(RUN_NUM_CYCLES_CMD) -> {
                     val cycles = consoleInput.substring(2).toInt()
                     waitForCycle = registers.cycles + cycles
                     debugging = false
                     continueRun = true
                 }
-                consoleInput.matches(CONTINUE_RUN) -> {
+                consoleInput.matches(CONTINUE_RUN_CMD) -> {
                     // disable debugging and continue "normal" run
                     debugging = false
                     continueRun = true
+                }
+                consoleInput.matches(EXIT_CMD) -> {
+                    System.exit(0)
                 }
                 else -> continueRun = true
             }
