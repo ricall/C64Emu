@@ -3,6 +3,7 @@ package c64.emulation.cpu
 import c64.emulation.C64ExecutionException
 import c64.emulation.System.memory
 import c64.emulation.System.registers
+import c64.emulation.System.vic
 import c64.emulation.cpu.instructionset.*
 import c64.emulation.debugger.Debugger
 import c64.emulation.disassemble.Disassembly
@@ -65,10 +66,10 @@ class CPU {
 
         // debugging settings
         disassembly.startDisassemblerAt = 0x0000
-        debugger.breakpoint = 0xFF5E
-        debugger.waitForCycle = -1
+        //debugger.breakpoint = 0xE5CD //0xFF5E
+        debugger.breakpoint = 0
+        debugger.waitForCycle = 2_130_000
 
-        // todo: remove params
         // initialize instructions table
         val instructions = arrayOf(::IncrementsDecrements, ::RegisterTransfers, ::LoadStore, ::JumpsCalls,
             ::Arithmetic, ::Logical, ::Branch, ::Stack, ::StatusFlags, ::Shift, ::System)
@@ -136,7 +137,8 @@ class CPU {
                 // decode and run opcode
                 decodeAndRunOpCode(currentOpcode)
 
-                // todo: handle cycles?
+                // do the VIC stuff
+                vic.refresh()
             }
         } catch (ex: C64ExecutionException) {
             logger.error { ex.message }

@@ -2,6 +2,7 @@ package c64.emulation.debugger
 
 import c64.emulation.System.memory
 import c64.emulation.System.registers
+import c64.emulation.System.vic
 import c64.emulation.disassemble.Disassembly
 import mu.KotlinLogging
 import java.util.*
@@ -20,8 +21,10 @@ class Debugger(private var disassembly: Disassembly) {
         private val PRINT_MEM_CMD = Regex("^m[0-9a-f]{4}$")
         private val PRINT_STACK_CMD = Regex("^s$")
         private val CONTINUE_RUN_CMD = Regex("^c$")
+        private val REMOVE_BREAKPOINT_CMD = Regex("^rb$")
         private val EXIT_CMD = Regex("^x$")
         private val RUN_NUM_CYCLES_CMD = Regex("^cy[0-9]+$")
+        private val SCREENSHOT_CMD = Regex("^screenshot$")
     }
 
     // kernel entry point: $FCE2
@@ -29,13 +32,13 @@ class Debugger(private var disassembly: Disassembly) {
     // debug mode after breakpoint reached
     var debugging = false
     // start debugging at cycle
-    var waitForCycle: Int = -1
+    var waitForCycle: Long = -1
 
     private val scanner = Scanner(System.`in`)
 
     fun checkStatus() {
         if (!debugging &&
-            (registers.PC == breakpoint || (waitForCycle != -1 && registers.cycles >= waitForCycle))
+            (registers.PC == breakpoint || (waitForCycle != -1L && registers.cycles >= waitForCycle))
         ) {
             debugging = true
             waitForCycle = -1
@@ -74,6 +77,12 @@ class Debugger(private var disassembly: Disassembly) {
                 }
                 consoleInput.matches(EXIT_CMD) -> {
                     System.exit(0)
+                }
+                consoleInput.matches(REMOVE_BREAKPOINT_CMD) -> {
+                    breakpoint = 0
+                }
+                consoleInput.matches(SCREENSHOT_CMD) -> {
+                    vic.saveScreenshot("c64screenshot.png")
                 }
                 else -> continueRun = true
             }

@@ -115,6 +115,15 @@ class Memory {
     }
 
     /**
+     * Fetches as single byte from the given address in the character ROM.
+     */
+    fun fetchFromCharROM(address: Int): UByte {
+        // use only bit 0-15, mask out all higher bits
+        val translatedAddress = (address and 0xFFFF).rem(CHARGEN_SIZE)
+        return charGenRom[translatedAddress]
+    }
+
+    /**
      * Fetches a single byte from the given address.
      */
     fun fetch(address: Int): UByte {

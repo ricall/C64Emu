@@ -47,7 +47,7 @@ class Registers {
     internal var C: Boolean = false
 
     // cycle counter
-    internal var cycles: Int = 0
+    internal var cycles: Long = 0
 
     internal fun reset() {
         A = 0x00u
