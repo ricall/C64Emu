@@ -35,16 +35,16 @@ class VIC {
         const val NTSC_CYCLES_PER_RASTERLINE: Int = 65
     }
 
-    private val bitmapData: BufferedImage
+    val bitmapData: BufferedImage
     private var lastRasterLine: Int = 0
 
     init {
+        logger.info { "init VIC" }
         bitmapData = BufferedImage(PAL_RASTERCOLUMNS, PAL_RASTERLINES, BufferedImage.TYPE_3BYTE_BGR)
     }
 
     fun saveScreenshot(filename: String) {
-        val file: File = File(filename)
-        ImageIO.write(bitmapData, "png", file)
+        ImageIO.write(bitmapData, "png", File(filename))
     }
 
     internal fun refresh() {

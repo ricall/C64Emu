@@ -1,6 +1,7 @@
 package c64.emulation.cpu
 
 import c64.emulation.C64ExecutionException
+import c64.emulation.System.cia
 import c64.emulation.System.memory
 import c64.emulation.System.registers
 import c64.emulation.System.vic
@@ -9,13 +10,17 @@ import c64.emulation.debugger.Debugger
 import c64.emulation.disassemble.Disassembly
 import c64.util.toHex
 import mu.KotlinLogging
+import java.time.Instant
+import java.time.temporal.ChronoField
 
 private val logger = KotlinLogging.logger {}
 
 // alias for "Instruction" functions
 typealias Instruction = () -> Unit
+
 @ExperimentalUnsignedTypes
 typealias InstructionWithArgAndResult = (value: UByte) -> UByte
+
 @ExperimentalUnsignedTypes
 typealias InstructionWithArg = (value: UByte) -> Unit
 
@@ -33,6 +38,7 @@ class CPU {
         val addressingMode: AddressingMode,
         val cycles: Int
     )
+
     private data class OpCodeInfoWithArgAndResult(
         val instruction: InstructionWithArgAndResult,
         val addressingMode: AddressingMode,
@@ -67,14 +73,16 @@ class CPU {
         // debugging settings
         disassembly.startDisassemblerAt = 0x0000
         //debugger.breakpoint = 0xE5CD //0xFF5E
-        debugger.breakpoint = 0
-        debugger.waitForCycle = 2_130_000
+        //debugger.breakpoint = 0
+        //debugger.waitForCycle = 2_130_000
 
         // initialize instructions table
-        val instructions = arrayOf(::IncrementsDecrements, ::RegisterTransfers, ::LoadStore, ::JumpsCalls,
-            ::Arithmetic, ::Logical, ::Branch, ::Stack, ::StatusFlags, ::Shift, ::System)
+        val instructions = arrayOf(
+            ::IncrementsDecrements, ::RegisterTransfers, ::LoadStore, ::JumpsCalls,
+            ::Arithmetic, ::Logical, ::Branch, ::Stack, ::StatusFlags, ::Shift, ::System
+        )
         instructions.forEach { it() }
-        logger.debug {"$numRegisteredOps opCodes registered"}
+        logger.debug { "$numRegisteredOps opCodes registered" }
     }
 
     /**
@@ -126,6 +134,7 @@ class CPU {
 
     fun runMachine() {
         val machineIsRunning = true
+        var lastMicroSecond = Instant.now().get(ChronoField.MICRO_OF_SECOND)
         try {
             while (machineIsRunning) {
                 // check debugging status, maybe print registers
@@ -139,6 +148,13 @@ class CPU {
 
                 // do the VIC stuff
                 vic.refresh()
+
+                val currentMicroSecond = Instant.now().get(ChronoField.MICRO_OF_SECOND)
+                if (currentMicroSecond != lastMicroSecond) {
+                    // todo - increase timer...
+                    lastMicroSecond = currentMicroSecond
+                    cia.cycle()
+                }
             }
         } catch (ex: C64ExecutionException) {
             logger.error { ex.message }
@@ -156,15 +172,12 @@ class CPU {
             debugger.handleConsoleDebugging()
             if (opCodeInfo is OpCodeInfo) {
                 opCodeInfo.instruction.invoke()
-            }
-            else if (opCodeInfo is OpCodeInfoWithArg) {
+            } else if (opCodeInfo is OpCodeInfoWithArg) {
                 runOpcodeWithFetch(opCodeInfo)
-            }
-            else if (opCodeInfo is OpCodeInfoWithArgAndResult) {
+            } else if (opCodeInfo is OpCodeInfoWithArgAndResult) {
                 runOpcodeWithFetchStore(opCodeInfo)
             }
-        }
-        else {
+        } else {
             // reset PC to get the correct register output
             registers.PC--
             throw C64ExecutionException(

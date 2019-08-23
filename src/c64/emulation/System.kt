@@ -1,5 +1,6 @@
 package c64.emulation
 
+import c64.emulation.cia.CIA
 import c64.emulation.cpu.CPU
 import c64.emulation.cpu.Registers
 import c64.emulation.memory.Memory
@@ -14,11 +15,12 @@ import c64.emulation.vic.VIC
 @ExperimentalUnsignedTypes
 object System {
 
-    internal var registers: Registers = Registers()
-    internal var memory: Memory = Memory()
-    internal var vic: VIC = VIC()
+    internal var registers = Registers()
+    internal var memory = Memory()
+    internal var vic = VIC()
+    internal var cia = CIA()
     // initialize CPU at last
-    internal var cpu: CPU = CPU()
+    internal var cpu = CPU()
 
     init {
         cpu.initialize()

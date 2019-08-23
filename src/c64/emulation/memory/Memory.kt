@@ -1,6 +1,8 @@
 package c64.emulation.memory
 
+import c64.emulation.System.cia
 import c64.emulation.System.registers
+import c64.emulation.cia.CIA
 import c64.util.toHex
 import c64.util.toUnprefixedHex
 import mu.KotlinLogging
@@ -12,7 +14,7 @@ private val logger = KotlinLogging.logger {}
 /**
  * Class which encapsulates all operations on memory.
  *
- * @author Daniel Schulte 2017-2018
+ * @author Daniel Schulte 2017-2019
  */
 @ExperimentalUnsignedTypes
 class Memory {
@@ -21,14 +23,17 @@ class Memory {
         const val MEM_SIZE: Int = 65536
         const val STACK_OFFSET: Int = 0x0100
 
+        val KERNAL_ADDRESS_SPACE = 0xE000..0xFFFF
         const val KERNAL_FILE: String = "./roms/kernal"
         const val KERNAL_OFFSET: Int = 0xE000
         const val KERNAL_SIZE: Int = 8192
 
+        val BASIC_ADDRESS_SPACE = 0xA000..0xBFFF
         const val BASIC_FILE: String = "./roms/basic"
         const val BASIC_OFFSET: Int = 0xA000
         const val BASIC_SIZE: Int = 8192
 
+        val CHARGEN_ADDRESS_SPACE = 0xD000..0xDFFF
         const val CHARGEN_FILE: String = "./roms/chargen"
         const val CHARGEN_OFFSET: Int = 0xD000
         const val CHARGEN_SIZE: Int = 4096
@@ -144,14 +149,14 @@ class Memory {
         var translatedAddress = address and 0xFFFF
         var mem: UByteArray = ram
         val processorPort: Int = (ram[0x0001] and 0b0000_0111u).toInt()
-        if (translatedAddress in 0xA000..0xBFFF) {
+        if (translatedAddress in BASIC_ADDRESS_SPACE) {
             // access Basic-ROM or RAM
             if (processorPort == 3 || processorPort == 7) {
                 mem = basicRom
                 translatedAddress -= BASIC_OFFSET
             }
         }
-        else if (translatedAddress in 0xD000..0xDFFF) {
+        else if (translatedAddress in CHARGEN_ADDRESS_SPACE) {
             // access CharGen-ROM, I/O devices or RAM
             if (processorPort in 1..3) {
                 // CharGen ROM
@@ -159,12 +164,16 @@ class Memory {
                 translatedAddress -= CHARGEN_OFFSET
             }
             else if (processorPort > 4) {
+                // check for CIA1
+                if (translatedAddress in CIA.CIA_ADDRESS_SPACE) {
+                    return cia.fetch(translatedAddress)
+                }
                 // I/O devices
                 mem = ioDevicesRam
                 translatedAddress -= CHARGEN_OFFSET
             }
         }
-        else if (translatedAddress in 0xE000..0xFFFF) {
+        else if (translatedAddress in KERNAL_ADDRESS_SPACE) {
             // access Kernal-ROM or RAM
             if (processorPort == 2 || processorPort == 3 || processorPort == 6 || processorPort == 7) {
                 mem = kernalRom
@@ -393,7 +402,13 @@ class Memory {
         var translatedAddress = address and 0xFFFF
         var mem: UByteArray = ram
         val processorPort: Int = (ram[0x0001] and 0b0000_0111u).toInt()
-        if (translatedAddress in 0xD000..0xDFFF && processorPort > 4) {
+        if (translatedAddress in CHARGEN_ADDRESS_SPACE && processorPort > 4) {
+            // check for CIA1
+            if (translatedAddress in CIA.CIA_ADDRESS_SPACE)
+            {
+                cia.store(translatedAddress, byte)
+                return
+            }
             // write to I/O devices
             mem = ioDevicesRam
             translatedAddress -= CHARGEN_OFFSET
@@ -449,8 +464,8 @@ class Memory {
 
     fun printMemoryLine(address: Int, numBytes: Int = 8): String {
         var memDump = ""
-        for (i in 0..(numBytes-1)) {
-            if (!memDump.isEmpty()) {
+        for (i in 0 until numBytes) {
+            if (memDump.isNotEmpty()) {
                 memDump += " "
             }
             memDump += fetch(address + i).toUnprefixedHex()

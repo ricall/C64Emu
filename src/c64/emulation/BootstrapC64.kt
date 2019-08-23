@@ -1,9 +1,6 @@
 package c64.emulation
 
-import mu.KLogging
-import org.apache.log4j.BasicConfigurator
-import org.apache.log4j.ConsoleAppender
-import org.apache.log4j.PatternLayout
+import mu.KotlinLogging
 
 /**
  * Bootstrapper for C64 emulator.
@@ -13,11 +10,9 @@ import org.apache.log4j.PatternLayout
 @ExperimentalUnsignedTypes
 class BootstrapC64 {
 
-    companion object : KLogging()
+    private val logger = KotlinLogging.logger {}
 
     init {
-        // PatternLayout("%-5p - %m%n"))
-        BasicConfigurator.configure(ConsoleAppender(PatternLayout("%m%n")))
         logger.info { "booting c64 system" }
         System.cpu.reset()
 
