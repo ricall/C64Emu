@@ -46,18 +46,23 @@ class CPU {
     )
 
     companion object {
+        const val NMI_VECTOR: Int = 0xFFFA
         const val RESET_VECTOR: Int = 0xFFFC
+        const val IRQ_BRK_VECTOR: Int = 0xFFFE
         // table with all instructions methods indexed with their opcode
         private val INSTRUCTION_TABLE = arrayOfNulls<Any>(0x100)
     }
 
-    private var disassembly: Disassembly
-    private var debugger: Debugger
+    internal var disassembly: Disassembly
+    internal var debugger: Debugger
 
     // currently executed opcode
     internal var currentOpcode: UByte = 0x00u
 
     private var numRegisteredOps = 0
+
+    // 0 none, 1=IRQ, 2=NMI, 3=RESET, 4=BRK
+    private var irqTypeSignaled = 0
 
     init {
         disassembly = Disassembly()
@@ -149,7 +154,11 @@ class CPU {
                 // do the VIC stuff
                 vic.refresh()
 
+                //  IRQ handling
+                handleInterrupt()
+
                 val currentMicroSecond = Instant.now().get(ChronoField.MICRO_OF_SECOND)
+                //logger.info {"current micro: $currentMicroSecond"}
                 if (currentMicroSecond != lastMicroSecond) {
                     // todo - increase timer...
                     lastMicroSecond = currentMicroSecond
@@ -158,6 +167,62 @@ class CPU {
             }
         } catch (ex: C64ExecutionException) {
             logger.error { ex.message }
+        }
+    }
+
+    fun signalTimerAIRQ() {
+        irqTypeSignaled = 1
+    }
+
+    private fun handleInterrupt() {
+        if (irqTypeSignaled != 0) {
+            // https://www.retro-programming.de/programming/nachschlagewerk/interrupts/
+
+            // 1.Sobald ein Interrupt auftritt, unterbricht die CPU das aktuelle Programm, nachdem der aktive Befehl verarbeitet wurde.
+            // Handelt es sich bei der Quelle um einen RESET, dann geht es direkt bei Punkt 6 weiter.
+            if (irqTypeSignaled != 3) {
+
+                // 2.Die Adresse des nächsten Befehls wird auf dem Stack abgelegt, erst das MSB, dann LSB.
+                // Denkt dran, dass der Stack, von oben nach unten gefüllt wird und somit die Adresse wieder im gewohnten LSB/MSB-Format im Speicher liegt.
+                memory.pushWordToStack(registers.PC)
+
+                // 3.Handelt es sich beim Auslöser um den BRK-Befehl, dann wird das B-Flag gesetzt.
+                // 4.Danach landet das Statusregister (inkl. ggf. gesetzem B-Flag) ebenfalls auf dem Stack.
+                if (irqTypeSignaled == 4) {
+                    // set B-Flag
+                    memory.pushToStack(registers.getProcessorStatus() or 0b0001_0000u)
+                }
+                else {
+                    memory.pushToStack(registers.getProcessorStatus() and 0b1110_1111u)
+                }
+
+                // 5.Jetzt werden noch weitere Interrupts durch Setzen des I-Flags verhindert.
+                registers.I = true
+            }
+
+            // 6.Die CPU springt zu der laut Hardware-Vektoren zugehörigen Speicherstelle.
+            // Abhängig von der jeweiligen Interruptquelle gibt es unterschiedliche Einsprungadressen.
+            if (irqTypeSignaled == 1 || irqTypeSignaled == 4) {
+                // IRQ/BRK
+                registers.PC = memory.fetchWord(IRQ_BRK_VECTOR)
+                //debugger.debugging = true
+                //disassembly.printDisassembledCode = true
+            }
+            else if (irqTypeSignaled == 2) {
+                // NMI
+                registers.PC = memory.fetchWord(NMI_VECTOR)
+            }
+            else if (irqTypeSignaled == 3) {
+                // RESET
+                registers.PC = memory.fetchWord(RESET_VECTOR)
+            }
+
+            // Bei einem RESET ist hier Schluß, schließlich startet der Rechner alles neu.
+            // 7.Trifft der Prozessor auf ein RTI (ReTurn from Interrupt), dann wird zunächst das Statusregister vom Stack geholt.
+            // Da das I-Flag erst nach der Ablage auf dem Stack gesetzt wurde, wird es so auch automatisch wieder gelöscht.
+            // Anschließend wird die Adresse des nächsten Befehls (s. Punkt 2) vom Stack geholt und das Programm dort fortgesetzt.
+
+            irqTypeSignaled = 0
         }
     }
 

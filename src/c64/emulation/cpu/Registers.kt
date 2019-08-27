@@ -65,7 +65,7 @@ class Registers {
     }
 
     internal fun getProcessorStatus(): UByte {
-        var result: Int = 0
+        var result = 0
         if (N) result += 128 // bit 7 = N
         if (V) result += 64  // bit 6 = V
         result += 32         // unused bit 5 always set

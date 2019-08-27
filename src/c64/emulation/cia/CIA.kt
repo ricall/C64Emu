@@ -1,5 +1,6 @@
 package c64.emulation.cia
 
+import c64.emulation.System.cpu
 import c64.util.toBinary
 import c64.util.toHex
 import mu.KotlinLogging
@@ -51,17 +52,19 @@ class CIA {
      */
     fun cycle() {
         if (timerAEnabled) {
+            //logger.info {"counting cycle down to $timerA"}
             timerA--
             if (timerA <= 0) {
                 // timer has reached 0
                 // reset timer to latch
                 timerA = timerALatch
-                if (timerARunMode == 1) {
+                if (timerARunMode == 8) {
                     // timer is in one-shot mode ==> stop timer
                     timerAEnabled = false
                 }
                 if (timerAIRQEnabled) {
-                    // todo - do interrupt on cpu...
+                    // signal Timer A interrupt
+                    cpu.signalTimerAIRQ()
                 }
             }
         }
@@ -71,9 +74,17 @@ class CIA {
      * Fetches a single byte from the given CIA address.
      */
     fun fetch(address: Int): UByte {
-        // todo - implementation
-        logger.info { "missing IMPL for CIA1:read ${address.toHex()}" }
-        return 0x00.toUByte()
+        when (address and 0x000F) {
+            CIACRA -> {
+                // todo - implementation
+                return 0x00.toUByte()
+            }
+            else -> {
+                // todo - implementation
+                logger.info { "missing IMPL for CIA1:read ${address.toHex()}" }
+                return 0x00.toUByte()
+            }
+        }
     }
 
     /**
@@ -143,7 +154,8 @@ class CIA {
         val setMode = byte.toInt() and 0b1000_0000 == 0b1000_0000
         // BIT 0: enable / disable Timer A interrupt
         if (byte.toInt() and 0b0000_0001 == 0b0000_0001) {
-            timerAEnabled = setMode
+            timerAIRQEnabled = setMode
+            logger.info {"timerAIRQEnabled: $timerAIRQEnabled"}
         }
         // check for missing implementation
         if (byte.toInt() and 0b0111_1110 > 0) {
@@ -157,10 +169,16 @@ class CIA {
         logger.info { "write to CIACRA register: ${byte.toBinary()}" }
         // BIT 0: start/stop Timer A
         timerAEnabled = byte.toInt() and 0b0000_0001 == 0b0000_0001
-        // Timer A run mode: 1=one-shot, 0=continous
+        logger.info {"timerAEnabled: $timerAEnabled"}
+        // BIT 3: Timer A run mode: 1=one-shot, 0=continous
         timerARunMode = byte.toInt() and 0b0000_1000;
+        logger.info { "timerARunMode: $timerARunMode" }
+        // BIT 4: load latch Timer A
+        if (byte.toInt() and 0b0001_0000 == 0b0001_0000) {
+            timerA = timerALatch
+        }
         // check for missing implementation
-        if (byte.toInt() and 0b1111_0110 > 0) {
+        if (byte.toInt() and 0b1110_0110 > 0) {
             // todo: implementation
             logger.warn { "not handled BITS for writeCIACRA register: ${byte.toBinary()}" }
         }
