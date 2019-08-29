@@ -138,7 +138,6 @@ class CPU {
     fun runMachine() {
         val machineIsRunning = true
         var lastMicroSecond = java.lang.System.nanoTime() / 1_000
-        val timerStartDelay  = lastMicroSecond + 2_000_000
         try {
             // main loop
             while (machineIsRunning) {
@@ -165,11 +164,9 @@ class CPU {
                     var opCodeCycleCount = registers.cycles - lastMachineCycleCount
                     // increase saved cycle count with the number of cycles for the last opcode run
                     lastMicroSecond += opCodeCycleCount
-                    if (currentMicroSecond > timerStartDelay) {
-                        while (opCodeCycleCount > 0) {
-                            cia.cycle()
-                            opCodeCycleCount--
-                        }
+                    while (opCodeCycleCount > 0) {
+                        cia.cycle()
+                        opCodeCycleCount--
                     }
                 }
             }
@@ -185,48 +182,46 @@ class CPU {
     private fun handleInterrupt() {
         if (irqTypeSignaled != 0) {
             // https://www.retro-programming.de/programming/nachschlagewerk/interrupts/
+            if (!registers.I) {
+                // 1.Sobald ein Interrupt auftritt, unterbricht die CPU das aktuelle Programm, nachdem der aktive Befehl verarbeitet wurde.
+                // Handelt es sich bei der Quelle um einen RESET, dann geht es direkt bei Punkt 6 weiter.
+                if (irqTypeSignaled != 3) {
 
-            // 1.Sobald ein Interrupt auftritt, unterbricht die CPU das aktuelle Programm, nachdem der aktive Befehl verarbeitet wurde.
-            // Handelt es sich bei der Quelle um einen RESET, dann geht es direkt bei Punkt 6 weiter.
-            if (irqTypeSignaled != 3) {
+                    // 2.Die Adresse des nächsten Befehls wird auf dem Stack abgelegt, erst das MSB, dann LSB.
+                    // Denkt dran, dass der Stack, von oben nach unten gefüllt wird und somit die Adresse wieder im gewohnten LSB/MSB-Format im Speicher liegt.
+                    memory.pushWordToStack(registers.PC)
 
-                // 2.Die Adresse des nächsten Befehls wird auf dem Stack abgelegt, erst das MSB, dann LSB.
-                // Denkt dran, dass der Stack, von oben nach unten gefüllt wird und somit die Adresse wieder im gewohnten LSB/MSB-Format im Speicher liegt.
-                memory.pushWordToStack(registers.PC)
+                    // 3.Handelt es sich beim Auslöser um den BRK-Befehl, dann wird das B-Flag gesetzt.
+                    // 4.Danach landet das Statusregister (inkl. ggf. gesetzem B-Flag) ebenfalls auf dem Stack.
+                    if (irqTypeSignaled == 4) {
+                        // set B-Flag
+                        memory.pushToStack(registers.getProcessorStatus() or 0b0001_0000u)
+                    } else {
+                        memory.pushToStack(registers.getProcessorStatus() and 0b1110_1111u)
+                    }
 
-                // 3.Handelt es sich beim Auslöser um den BRK-Befehl, dann wird das B-Flag gesetzt.
-                // 4.Danach landet das Statusregister (inkl. ggf. gesetzem B-Flag) ebenfalls auf dem Stack.
-                if (irqTypeSignaled == 4) {
-                    // set B-Flag
-                    memory.pushToStack(registers.getProcessorStatus() or 0b0001_0000u)
+                    // 5.Jetzt werden noch weitere Interrupts durch Setzen des I-Flags verhindert.
+                    registers.I = true
                 }
-                else {
-                    memory.pushToStack(registers.getProcessorStatus() and 0b1110_1111u)
+
+                // 6.Die CPU springt zu der laut Hardware-Vektoren zugehörigen Speicherstelle.
+                // Abhängig von der jeweiligen Interruptquelle gibt es unterschiedliche Einsprungadressen.
+                if (irqTypeSignaled == 1 || irqTypeSignaled == 4) {
+                    // IRQ/BRK
+                    registers.PC = memory.fetchWord(IRQ_BRK_VECTOR)
+                } else if (irqTypeSignaled == 2) {
+                    // NMI
+                    registers.PC = memory.fetchWord(NMI_VECTOR)
+                } else if (irqTypeSignaled == 3) {
+                    // RESET
+                    registers.PC = memory.fetchWord(RESET_VECTOR)
                 }
 
-                // 5.Jetzt werden noch weitere Interrupts durch Setzen des I-Flags verhindert.
-                registers.I = true
+                // Bei einem RESET ist hier Schluß, schließlich startet der Rechner alles neu.
+                // 7.Trifft der Prozessor auf ein RTI (ReTurn from Interrupt), dann wird zunächst das Statusregister vom Stack geholt.
+                // Da das I-Flag erst nach der Ablage auf dem Stack gesetzt wurde, wird es so auch automatisch wieder gelöscht.
+                // Anschließend wird die Adresse des nächsten Befehls (s. Punkt 2) vom Stack geholt und das Programm dort fortgesetzt.
             }
-
-            // 6.Die CPU springt zu der laut Hardware-Vektoren zugehörigen Speicherstelle.
-            // Abhängig von der jeweiligen Interruptquelle gibt es unterschiedliche Einsprungadressen.
-            if (irqTypeSignaled == 1 || irqTypeSignaled == 4) {
-                // IRQ/BRK
-                registers.PC = memory.fetchWord(IRQ_BRK_VECTOR)
-            }
-            else if (irqTypeSignaled == 2) {
-                // NMI
-                registers.PC = memory.fetchWord(NMI_VECTOR)
-            }
-            else if (irqTypeSignaled == 3) {
-                // RESET
-                registers.PC = memory.fetchWord(RESET_VECTOR)
-            }
-
-            // Bei einem RESET ist hier Schluß, schließlich startet der Rechner alles neu.
-            // 7.Trifft der Prozessor auf ein RTI (ReTurn from Interrupt), dann wird zunächst das Statusregister vom Stack geholt.
-            // Da das I-Flag erst nach der Ablage auf dem Stack gesetzt wurde, wird es so auch automatisch wieder gelöscht.
-            // Anschließend wird die Adresse des nächsten Befehls (s. Punkt 2) vom Stack geholt und das Programm dort fortgesetzt.
 
             irqTypeSignaled = 0
         }
