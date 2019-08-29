@@ -75,10 +75,14 @@ class CIA {
      */
     fun fetch(address: Int): UByte {
         when (address and 0x000F) {
-            CIACRA -> {
+            /*CIAICR -> {
                 // todo - implementation
                 return 0x00.toUByte()
             }
+            CIACRA -> {
+                // todo - implementation
+                return 0x00.toUByte()
+            }*/
             else -> {
                 // todo - implementation
                 logger.info { "missing IMPL for CIA1:read ${address.toHex()}" }

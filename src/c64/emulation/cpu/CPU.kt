@@ -10,8 +10,6 @@ import c64.emulation.debugger.Debugger
 import c64.emulation.disassemble.Disassembly
 import c64.util.toHex
 import mu.KotlinLogging
-import java.time.Instant
-import java.time.temporal.ChronoField
 
 private val logger = KotlinLogging.logger {}
 
@@ -77,7 +75,7 @@ class CPU {
 
         // debugging settings
         disassembly.startDisassemblerAt = 0x0000
-        //debugger.breakpoint = 0xE5CD //0xFF5E
+        //debugger.breakpoint = 0xEA3C // main irq entry point (0xEA31)
         //debugger.breakpoint = 0
         //debugger.waitForCycle = 2_130_000
 
@@ -139,30 +137,40 @@ class CPU {
 
     fun runMachine() {
         val machineIsRunning = true
-        var lastMicroSecond = Instant.now().get(ChronoField.MICRO_OF_SECOND)
+        var lastMicroSecond = java.lang.System.nanoTime() / 1_000
+        val timerStartDelay  = lastMicroSecond + 2_000_000
         try {
+            // main loop
             while (machineIsRunning) {
-                // check debugging status, maybe print registers
-                debugger.checkStatus()
-                // check disassembly status
-                disassembly.checkStatus()
-                // fetch byte from memory
-                currentOpcode = memory.fetchWithPC()
-                // decode and run opcode
-                decodeAndRunOpCode(currentOpcode)
+                // get current microsecond
+                val currentMicroSecond = java.lang.System.nanoTime() / 1_000
+                // execute opcodes till we have reached the current microsecond
+                while (currentMicroSecond > lastMicroSecond) {
+                    val lastMachineCycleCount = registers.cycles
+                    // check debugging status, maybe print registers
+                    debugger.checkStatus()
+                    // check disassembly status
+                    disassembly.checkStatus()
+                    // fetch byte from memory
+                    currentOpcode = memory.fetchWithPC()
+                    // decode and run opcode
+                    decodeAndRunOpCode(currentOpcode)
 
-                // do the VIC stuff
-                vic.refresh()
+                    // do the VIC stuff
+                    vic.refresh()
 
-                //  IRQ handling
-                handleInterrupt()
+                    //  IRQ handling
+                    handleInterrupt()
 
-                val currentMicroSecond = Instant.now().get(ChronoField.MICRO_OF_SECOND)
-                //logger.info {"current micro: $currentMicroSecond"}
-                if (currentMicroSecond != lastMicroSecond) {
-                    // todo - increase timer...
-                    lastMicroSecond = currentMicroSecond
-                    cia.cycle()
+                    var opCodeCycleCount = registers.cycles - lastMachineCycleCount
+                    // increase saved cycle count with the number of cycles for the last opcode run
+                    lastMicroSecond += opCodeCycleCount
+                    if (currentMicroSecond > timerStartDelay) {
+                        while (opCodeCycleCount > 0) {
+                            cia.cycle()
+                            opCodeCycleCount--
+                        }
+                    }
                 }
             }
         } catch (ex: C64ExecutionException) {
@@ -205,8 +213,6 @@ class CPU {
             if (irqTypeSignaled == 1 || irqTypeSignaled == 4) {
                 // IRQ/BRK
                 registers.PC = memory.fetchWord(IRQ_BRK_VECTOR)
-                //debugger.debugging = true
-                //disassembly.printDisassembledCode = true
             }
             else if (irqTypeSignaled == 2) {
                 // NMI

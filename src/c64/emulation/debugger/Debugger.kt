@@ -18,9 +18,10 @@ private val logger = KotlinLogging.logger {}
 class Debugger(private var disassembly: Disassembly) {
 
     companion object {
-        private val PRINT_MEM_CMD = Regex("^m[0-9a-f]{4}$")
+        private val PRINT_MEM_CMD = Regex("^m[0-9a-f]{2,4}$")
         private val PRINT_STACK_CMD = Regex("^s$")
         private val CONTINUE_RUN_CMD = Regex("^c$")
+        private val CONTINUE_RUN_NO_DISASSEMBLY_CMD = Regex("^cx$")
         private val REMOVE_BREAKPOINT_CMD = Regex("^rb$")
         private val EXIT_CMD = Regex("^x$")
         private val RUN_NUM_CYCLES_CMD = Regex("^cy[0-9]+$")
@@ -73,6 +74,12 @@ class Debugger(private var disassembly: Disassembly) {
                 consoleInput.matches(CONTINUE_RUN_CMD) -> {
                     // disable debugging and continue "normal" run
                     debugging = false
+                    continueRun = true
+                }
+                consoleInput.matches(CONTINUE_RUN_NO_DISASSEMBLY_CMD) -> {
+                    // disable debugging & disassembly and continue "normal" run
+                    debugging = false
+                    disassembly.printDisassembledCode = false
                     continueRun = true
                 }
                 consoleInput.matches(EXIT_CMD) -> {
