@@ -136,42 +136,48 @@ class CPU {
     }
 
     fun runMachine() {
-        val machineIsRunning = true
-        var lastMicroSecond = java.lang.System.nanoTime() / 1_000
+        val clock = Clock()
+        clock.start(::runCycles)
+    }
+
+    /**
+     * Runs the machine for the given amount of cycles.
+     * @param cycles numer of cycles to execute
+     * @return number of additional executed cycles
+     */
+    private fun runCycles(cycles: Long): Long {
         try {
-            // main loop
-            while (machineIsRunning) {
-                // get current microsecond
-                val currentMicroSecond = java.lang.System.nanoTime() / 1_000
-                // execute opcodes till we have reached the current microsecond
-                while (currentMicroSecond > lastMicroSecond) {
-                    val lastMachineCycleCount = registers.cycles
-                    // check debugging status, maybe print registers
-                    debugger.checkStatus()
-                    // check disassembly status
-                    disassembly.checkStatus()
-                    // fetch byte from memory
-                    currentOpcode = memory.fetchWithPC()
-                    // decode and run opcode
-                    decodeAndRunOpCode(currentOpcode)
+            var cyclesExecuted: Long = 0
+            do {
+                val lastMachineCycleCount = registers.cycles
+                // check debugging status, maybe print registers
+                debugger.checkStatus()
+                // check disassembly status
+                disassembly.checkStatus()
+                // fetch byte from memory
+                currentOpcode = memory.fetchWithPC()
+                // decode and run opcode
+                decodeAndRunOpCode(currentOpcode)
 
-                    // do the VIC stuff
-                    vic.refresh()
+                // do the VIC stuff
+                vic.refresh()
 
-                    //  IRQ handling
-                    handleInterrupt()
+                //  IRQ handling
+                handleInterrupt()
 
-                    var opCodeCycleCount = registers.cycles - lastMachineCycleCount
-                    // increase saved cycle count with the number of cycles for the last opcode run
-                    lastMicroSecond += opCodeCycleCount
-                    while (opCodeCycleCount > 0) {
-                        cia.cycle()
-                        opCodeCycleCount--
-                    }
+                var opCodeCycleCount = registers.cycles - lastMachineCycleCount
+                cyclesExecuted += opCodeCycleCount
+                while (opCodeCycleCount > 0) {
+                    cia.cycle()
+                    opCodeCycleCount--
                 }
             }
+            while (cyclesExecuted < cycles)
+            return cyclesExecuted - cycles
+
         } catch (ex: C64ExecutionException) {
             logger.error { ex.message }
+            return 0
         }
     }
 
