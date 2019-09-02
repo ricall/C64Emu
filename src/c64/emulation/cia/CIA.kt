@@ -175,7 +175,7 @@ class CIA {
         timerAEnabled = byte.toInt() and 0b0000_0001 == 0b0000_0001
         logger.info {"timerAEnabled: $timerAEnabled"}
         // BIT 3: Timer A run mode: 1=one-shot, 0=continous
-        timerARunMode = byte.toInt() and 0b0000_1000;
+        timerARunMode = byte.toInt() and 0b0000_1000
         logger.info { "timerARunMode: $timerARunMode" }
         // BIT 4: load latch Timer A
         if (byte.toInt() and 0b0001_0000 == 0b0001_0000) {

@@ -8,6 +8,12 @@ package c64.emulation.cpu
  */
 class Clock {
 
+    companion object {
+        // PAL clock speed: 985248 Hz
+        const val PAL_CLOCK = 985248
+        const val PAL_CYCLES_PER_MILLI = PAL_CLOCK / 1000
+    }
+
     fun start(callback: (Long) -> Long) {
         var lastMilliSecond = System.currentTimeMillis()
         // clock main loop
@@ -16,10 +22,9 @@ class Clock {
             val currentMilliSecond = System.currentTimeMillis()
             // check whether milliseconds counted up
             if (currentMilliSecond > lastMilliSecond) {
-                callback.invoke((currentMilliSecond - lastMilliSecond) * 1000)
+                callback.invoke((currentMilliSecond - lastMilliSecond) * PAL_CYCLES_PER_MILLI)
                 lastMilliSecond = currentMilliSecond
-            }
-            else {
+            } else {
                 // same millisecond, sleep 1 millisecond instead
                 Thread.sleep(1)
             }

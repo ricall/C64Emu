@@ -401,8 +401,7 @@ class Memory {
         // use only bit 0-15, mask out all higher bits
         var translatedAddress = address and 0xFFFF
         var mem: UByteArray = ram
-        val processorPort: Int = (ram[0x0001] and 0b0000_0111u).toInt()
-        if (translatedAddress in CHARGEN_ADDRESS_SPACE && processorPort > 4) {
+        if (translatedAddress in CHARGEN_ADDRESS_SPACE && (ram[0x0001] and 0b0000_0111u).toInt() > 4) {
             // check for CIA1
             if (translatedAddress in CIA.CIA_ADDRESS_SPACE)
             {

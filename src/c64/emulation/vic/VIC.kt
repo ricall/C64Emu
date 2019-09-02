@@ -30,6 +30,7 @@ class VIC {
         const val PAL_RASTERLINES: Int = 312
         const val PAL_RASTERCOLUMNS: Int = 367
         const val PAL_CYCLES_PER_RASTERLINE: Int = 63
+        const val PAL_CYCLES_PER_FRAME: Int = PAL_RASTERLINES * PAL_CYCLES_PER_RASTERLINE
 
         const val NTSC_RASTERLINES: Int = 263
         const val NTSC_CYCLES_PER_RASTERLINE: Int = 65
@@ -51,8 +52,7 @@ class VIC {
         // PAL systems (50Hz) uses ~312 rasterlines (means ~63 cycles per line), visible lines: 284 (16-299)
         // NTSC systems (60Hz) uses ~263 rasterlines (means ~65 cycles per line), visible lines: 235 (...)
         // calc current rasterline
-        val frame: Long = registers.cycles / (PAL_RASTERLINES * PAL_CYCLES_PER_RASTERLINE)
-        val line: Int = ((registers.cycles  - frame * PAL_RASTERLINES * PAL_CYCLES_PER_RASTERLINE) / PAL_CYCLES_PER_RASTERLINE).toInt()
+        val line: Int = (registers.cycles.rem(PAL_CYCLES_PER_FRAME) / PAL_CYCLES_PER_RASTERLINE).toInt()
         if (lastRasterLine != line) {
             // new rasterline starts now
             // store new line positon in $D012 + $D011
