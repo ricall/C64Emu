@@ -46,6 +46,8 @@ class CIA {
     private var timerBLatch: Int = 0x0000
     private var timerB: Int = 0x0000
 
+    private var ciaIcrState: UByte = 0x00u
+
 
     /**
      * Signals the next cycle
@@ -56,6 +58,8 @@ class CIA {
             timerA--
             if (timerA <= 0) {
                 // timer has reached 0
+                // --> set CIAICR: bit 0 (timer a count down to 0), bit 7 (IRQ)
+                ciaIcrState = ciaIcrState or 0b1000_0001u
                 // reset timer to latch
                 timerA = timerALatch
                 if (timerARunMode == 8) {
@@ -74,19 +78,20 @@ class CIA {
      * Fetches a single byte from the given CIA address.
      */
     fun fetch(address: Int): UByte {
-        when (address and 0x000F) {
-            /*CIAICR -> {
-                // todo - implementation
-                return 0x00.toUByte()
+        return when (address and 0x000F) {
+            CIAICR -> {
+                val result = ciaIcrState
+                ciaIcrState = 0x00u
+                result
             }
-            CIACRA -> {
-                // todo - implementation
-                return 0x00.toUByte()
-            }*/
+            /*CIACRA -> {
+                    // todo - implementation
+                    return 0x00.toUByte()
+                }*/
             else -> {
                 // todo - implementation
                 logger.info { "missing IMPL for CIA1:read ${address.toHex()}" }
-                return 0x00.toUByte()
+                0x00.toUByte()
             }
         }
     }
@@ -98,47 +103,43 @@ class CIA {
         // use only bit 0-4, mask out all higher bits
         when (address and 0x000F) {
             DATA_PORT_A -> {
-                //logger.info { "missing IMPL for DATA_PORT_A:write ${byte.toHex()}" }
+                logger.info { "missing IMPL for DATA_PORT_A:write ${byte.toHex()} (${byte.toBinary()})" }
             }
             DATA_PORT_B -> {
-                //logger.info { "missing IMPL for DATA_PORT_B:write ${byte.toHex()}" }
+                logger.info { "missing IMPL for DATA_PORT_B:write ${byte.toHex()} (${byte.toBinary()})" }
             }
             DATA_DIRECTION_A -> {
-                //logger.info { "missing IMPL for DATA_DIRECTION_A:write ${byte.toHex()}" }
+                logger.info { "missing IMPL for DATA_DIRECTION_A:write ${byte.toHex()}" }
             }
             DATA_DIRECTION_B -> {
-                //logger.info { "missing IMPL for DATA_DIRECTION_B:write ${byte.toHex()}" }
+                logger.info { "missing IMPL for DATA_DIRECTION_B:write ${byte.toHex()}" }
             }
             TIMER_A_LOW -> {
-                logger.info { "write to TIMER_A_LOW: ${byte.toHex()}" }
                 timerALatch = (timerALatch and 0xFF00) + byte.toInt()
             }
             TIMER_A_HIGH -> {
-                logger.info { "write to TIMER_A_HIGH: ${byte.toHex()}" }
                 timerALatch = (timerALatch and 0x00FF) + (byte.toInt() shl 8)
             }
             TIMER_B_LOW -> {
-                logger.info { "write to TIMER_B_LOW register: ${byte.toHex()}" }
                 timerBLatch = (timerBLatch and 0xFF00) + byte.toInt()
             }
             TIMER_B_HIGH -> {
-                logger.info { "write to TIMER_B_HIGH register: ${byte.toHex()}" }
                 timerBLatch = (timerBLatch and 0x00FF) + (byte.toInt() shl 8)
             }
             TODTEN -> {
-                //logger.info { "missing IMPL for TODTEN:write ${byte.toHex()}"}
+                logger.info { "missing IMPL for TODTEN:write ${byte.toHex()}"}
             }
             TODSEC -> {
-                //logger.info { "missing IMPL for TODSEC:write ${byte.toHex()}" }
+                logger.info { "missing IMPL for TODSEC:write ${byte.toHex()}" }
             }
             TODMIN -> {
-                //logger.info { "missing IMPL for TODMIN:write ${byte.toHex()}" }
+                logger.info { "missing IMPL for TODMIN:write ${byte.toHex()}" }
             }
             TODHRS -> {
-                //logger.info { "missing IMPL for TODHRS:write ${byte.toHex()}" }
+                logger.info { "missing IMPL for TODHRS:write ${byte.toHex()}" }
             }
             CIASDR -> {
-                //logger.info { "missing IMPL for CIASDR:write ${byte.toHex()}" }
+                logger.info { "missing IMPL for CIASDR:write ${byte.toHex()}" }
             }
             CIAICR -> {
                 writeCIAICR(byte)
@@ -153,7 +154,7 @@ class CIA {
     }
 
     private fun writeCIAICR(byte: UByte) {
-        logger.info {"write to CIAICR register: ${byte.toBinary()}"}
+        // logger.info {"write to CIAICR register: ${byte.toBinary()}"}
         // BIT 7: set or clear bits (0=clear bits, 1=set bits)
         val setMode = byte.toInt() and 0b1000_0000 == 0b1000_0000
         // BIT 0: enable / disable Timer A interrupt
@@ -161,16 +162,16 @@ class CIA {
             timerAIRQEnabled = setMode
             logger.info {"timerAIRQEnabled: $timerAIRQEnabled"}
         }
+        // BIT 5-6 unused
         // check for missing implementation
-        if (byte.toInt() and 0b0111_1110 > 0) {
+        if (byte.toInt() and 0b0001_1110 > 0) {
             // todo: implementation
-            logger.warn { "not handled BITS for CIAICR register: ${byte.toBinary()}" }
+            logger.warn { "not handled BITS for CIAICR register: ${(byte and 0b0001_1110u).toBinary()}" }
         }
     }
 
     private fun writeCIACRA(byte: UByte) {
-        // todo: implementation
-        logger.info { "write to CIACRA register: ${byte.toBinary()}" }
+        // logger.info { "write to CIACRA register: ${byte.toBinary()}" }
         // BIT 0: start/stop Timer A
         timerAEnabled = byte.toInt() and 0b0000_0001 == 0b0000_0001
         logger.info {"timerAEnabled: $timerAEnabled"}
@@ -184,12 +185,13 @@ class CIA {
         // check for missing implementation
         if (byte.toInt() and 0b1110_0110 > 0) {
             // todo: implementation
-            logger.warn { "not handled BITS for writeCIACRA register: ${byte.toBinary()}" }
+            logger.warn { "not handled BITS for writeCIACRA register: ${(byte and 0b1110_0110u).toBinary()}" }
         }
     }
 
     private fun writeCIACRB(byte: UByte) {
+        // logger.info {"write to CIACRB register: ${byte.toBinary()}"}
+        logger.warn { "not handled BITS for writeCIACRB register: ${byte.toBinary()}" }
         // todo: implementation
-        logger.info {"write to CIACRB register: ${byte.toBinary()}"}
     }
 }
