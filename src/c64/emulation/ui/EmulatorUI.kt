@@ -1,6 +1,7 @@
 package c64.emulation.ui
 
 import c64.emulation.BootstrapC64
+import c64.emulation.System.keyboard
 import c64.emulation.System.vic
 import c64.emulation.vic.VIC
 import kotlinx.coroutines.GlobalScope
@@ -32,6 +33,8 @@ class EmulatorUI {
         frame.defaultCloseOperation = JFrame.EXIT_ON_CLOSE
         frame.size = Dimension(VIC.PAL_RASTERCOLUMNS * 2, VIC.PAL_RASTERLINES * 2)
         frame.isVisible = true
+
+        frame.addKeyListener(keyboard)
 
         GlobalScope.launch {
             BootstrapC64()

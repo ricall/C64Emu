@@ -75,7 +75,7 @@ class CPU {
 
         // debugging settings
         disassembly.startDisassemblerAt = 0x0000
-        //debugger.breakpoint = 0xEA3C // main irq entry point (0xEA31)
+        //debugger.breakpoint = 0xEA87 // main irq entry point (0xEA31)
         //debugger.breakpoint = 0
         //debugger.waitForCycle = 2_130_000
 

@@ -1,6 +1,7 @@
 package c64.emulation.cia
 
 import c64.emulation.System.cpu
+import c64.emulation.System.keyboard
 import c64.util.toBinary
 import c64.util.toHex
 import mu.KotlinLogging
@@ -48,6 +49,7 @@ class CIA {
 
     private var ciaIcrState: UByte = 0x00u
 
+    private var dataPortA: UByte = 0x00u
 
     /**
      * Signals the next cycle
@@ -79,6 +81,12 @@ class CIA {
      */
     fun fetch(address: Int): UByte {
         return when (address and 0x000F) {
+            DATA_PORT_A -> {
+                dataPortA
+            }
+            DATA_PORT_B -> {
+                keyboard.getDataPortB(dataPortA)
+            }
             CIAICR -> {
                 val result = ciaIcrState
                 ciaIcrState = 0x00u
@@ -103,7 +111,9 @@ class CIA {
         // use only bit 0-4, mask out all higher bits
         when (address and 0x000F) {
             DATA_PORT_A -> {
-                logger.info { "missing IMPL for DATA_PORT_A:write ${byte.toHex()} (${byte.toBinary()})" }
+                // todo: check DATA_DIRECTION_A before writing
+                // set keyboard matrix column
+                dataPortA = byte
             }
             DATA_PORT_B -> {
                 logger.info { "missing IMPL for DATA_PORT_B:write ${byte.toHex()} (${byte.toBinary()})" }
