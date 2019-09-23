@@ -16,7 +16,7 @@ class Keyboard : KeyListener {
         var SHIFT_CODE = 0xFF
         var keyboardTranslationMatrix = arrayOf(
             //         DEL   RET   C-RI  F7    F1    F3    F5    C-DO
-            intArrayOf(0x00, 0x0A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00),
+            intArrayOf(0x08, 0x0A, 0x27, 0x00, 0x00, 0x00, 0x00, 0x28),
             //         3     W     A     4     Z     S     E     LSHI
             intArrayOf(0x33, 0x57, 0x41, 0x34, 0x5A, 0x53, 0x45, 0xFF),
             //         5     R     D     6     C     F     T     X
@@ -29,12 +29,34 @@ class Keyboard : KeyListener {
             intArrayOf(0x2B, 0x50, 0x4C, 0x2D, 0x2E, 0x3A, 0x40, 0x2C),
             //         £     *     ;     HOME  RSHI  =     ^     /
             intArrayOf(0x9C, 0x2A, 0x3B, 0x00, 0x00, 0x3D, 0x5E, 0x2F),
-            //         1     <     CTRL  2     SPACE C=    Q     RUN/STOP
-            intArrayOf(0x31, 0x3C, 0x00, 0x32, 0x20, 0x00, 0x51, 0x00)
+            //         1     <-    CTRL  2     SPACE C=    Q     RUN/STOP
+            intArrayOf(0x31, 0x3C, 0x00, 0x32, 0x20, 0x00, 0x51, 0x1B)
         )
-        var keyboardTranslation = hashMapOf(KeyEvent.VK_PLUS to 0x2B, KeyEvent.VK_0 to 0x3D)
-        // todo var keyboardShiftTranslation = hashMapOf(KeyEvent.VK_PLUS to 0x2B, KeyEvent.VK_0 to 0x3D)
+        var keyboardTranslation = hashMapOf(
+            KeyEvent.VK_PLUS to 0x2B,
+            KeyEvent.VK_LESS to 0x2C,
+            KeyEvent.VK_NUMBER_SIGN to 0x33,
+            KeyEvent.VK_LEFT to 0x27,
+            KeyEvent.VK_RIGHT to 0x27,
+            KeyEvent.VK_UP to 0x28,
+            KeyEvent.VK_DOWN to 0x28,
+            KeyEvent.VK_BACK_SPACE to 0x08,
+            KeyEvent.VK_DEAD_CIRCUMFLEX to 0x3C,
+            KeyEvent.VK_ESCAPE to 0x1B)
+        var keyboardTranslationShiftState = hashSetOf(
+            KeyEvent.VK_LESS, KeyEvent.VK_NUMBER_SIGN, KeyEvent.VK_LEFT, KeyEvent.VK_UP)
+        var keyboardShiftTranslation = hashMapOf(
+            KeyEvent.VK_0 to 0x3D,
+            KeyEvent.VK_7 to 0x2F,
+            KeyEvent.VK_PERIOD to 0x3A,
+            KeyEvent.VK_COMMA to 0x3B,
+            KeyEvent.VK_PLUS to 0x2A,
+            KeyEvent.VK_LESS to 0x2E,
+            KeyEvent.VK_NUMBER_SIGN to 0x37)
+        var keyboardShiftTranslationShiftState = hashSetOf(KeyEvent.VK_LESS, KeyEvent.VK_NUMBER_SIGN)
     }
+
+    // todo: keys to translate:  ? [ ] CMD SHIFT-LOCK CTRL CLR/HOME RESTORE ARROW-UP F1-F8
 
     private var shiftState: Int = -1
     private var lastKeyCode: Int = -1
@@ -77,39 +99,27 @@ class Keyboard : KeyListener {
             lastKeyCode = e.keyCode
             val shiftDown = e.modifiersEx and InputEvent.SHIFT_DOWN_MASK == InputEvent.SHIFT_DOWN_MASK
             if (shiftDown) {
-                when (lastKeyCode) {
-                    in KeyEvent.VK_A..KeyEvent.VK_Z,
-                    in KeyEvent.VK_1..KeyEvent.VK_2,
-                    in KeyEvent.VK_4..KeyEvent.VK_6,
-                    in KeyEvent.VK_8..KeyEvent.VK_9 -> {
-                        // keys A-Z, 1-2, 4-6, 8-9
-                        // ==> normal shift handling
-                        shiftState = SHIFT_CODE
-                    }
-                    KeyEvent.VK_0 -> {
-                        lastKeyCode = keyboardTranslation[lastKeyCode]
-                    }
-                    KeyEvent.VK_7 -> {
-                        // shift+7 => /
-                        lastKeyCode = 0x2F
-                    }
-                    KeyEvent.VK_PERIOD -> {
-                        // shift+. => :
-                        lastKeyCode = 0x3A
-                    }
-                    KeyEvent.VK_COMMA -> {
-                        // shift+, => ;
-                        lastKeyCode = 0x3B
-                    }
+                if (lastKeyCode in KeyEvent.VK_A..KeyEvent.VK_Z ||
+                    lastKeyCode in KeyEvent.VK_1..KeyEvent.VK_2 ||
+                    lastKeyCode in KeyEvent.VK_4..KeyEvent.VK_6 ||
+                    lastKeyCode in KeyEvent.VK_8..KeyEvent.VK_9) {
+                    // keys A-Z, 1-2, 4-6, 8-9
+                    // ==> normal shift handling
+                    shiftState = SHIFT_CODE
+                }
+                if (keyboardShiftTranslationShiftState.contains(lastKeyCode)) {
+                    shiftState = SHIFT_CODE
+                }
+                if (keyboardShiftTranslation.containsKey(lastKeyCode)) {
+                    lastKeyCode = keyboardShiftTranslation[lastKeyCode]!!
                 }
             }
             else {
-                // todo: ? * # ' (^ should be left arrow) < > ESC (BACK shoudl be DEL) CURSOR-KEY
-                when (lastKeyCode) {
-                    KeyEvent.VK_PLUS -> {
-                        // translate +
-                        lastKeyCode = keyboardTranslation[lastKeyCode]
-                    }
+                if (keyboardTranslationShiftState.contains(lastKeyCode)) {
+                    shiftState = SHIFT_CODE
+                }
+                if (keyboardTranslation.containsKey(lastKeyCode)) {
+                    lastKeyCode = keyboardTranslation[lastKeyCode]!!
                 }
             }
         } else {
