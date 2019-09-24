@@ -19,11 +19,6 @@ private val logger = KotlinLogging.logger {}
 class VIC {
 
     // TODO: handle interrupt status in $D019
-    // TODO: handle background color at $D021
-    // TODO: handle border color at $D020
-    // TODO: registers are from $D000-D3FF, repeating every 64bytes 16x ($D000, $D040, $D080,...)
-    // TODO: handle screen-memory AND charset (in current video-bank) in $D018
-    // TODO: color ram always at $D800
     // TODO: set used video-bank (bit 0+1) in $DD00 (CIA2) (+$DD02 Port A data direction register)
 
     companion object {
@@ -34,6 +29,28 @@ class VIC {
 
         const val NTSC_RASTERLINES: Int = 263
         const val NTSC_CYCLES_PER_RASTERLINE: Int = 65
+
+        ///////////////////////////////////////////
+        // registers are from $D000-D3FF, repeating every 64bytes 16x ($D000, $D040, $D080,...)
+        ///////////////////////////////////////////
+        // Vertical Fine Scrolling and Control Register
+        const val VIC_SCROLY = 0xD011
+        // Read Current Raster Scan Line/Write Line to Compare for Raster IRQ
+        const val VIC_RASTER = 0xD012
+        // Chip Memory Control Register
+        const val VIC_VMCSB = 0xD018
+        // Border Color Register
+        const val VIC_EXTCOL = 0xD020
+        // Background Color 0
+        const val VIC_BGCOL1 = 0xD021
+
+        // color ram $D800-DBFF
+        const val COLOR_RAM = 0xD800
+
+        val COLOR_TABLE = arrayOf(
+            0x000000, 0xFFFFFF, 0xAF2A29, 0x62D8CC, 0xB03FB6, 0x4AC64A, 0x3739C4, 0xE4ED4E,
+            0xB6591C, 0x683808, 0xEA746C, 0x4D4D4D, 0x848484, 0xA6FA9E, 0x707CE6, 0xB6B6B5
+        )
     }
 
     val bitmapData: BufferedImage
@@ -56,7 +73,7 @@ class VIC {
         if (lastRasterLine != line) {
             // new rasterline starts now
             // store new line positon in $D012 + $D011
-            memory.store(0xD012, line.toUByte())
+            memory.store(VIC_RASTER, line.toUByte())
             // TODO: store bit 8 of current line in bit 7 of $D011
             // raster last finished line to bitmap
             rasterLine(lastRasterLine)
@@ -67,24 +84,27 @@ class VIC {
     private fun rasterLine(rasterline: Int) {
         // display window from rasterline 51 - 250 (=200 lines)
         // display window from rastercolumn 24 - 343 (=320px)
-        val bitmapMode = memory.fetch(0xD011) and 0b0010_0000u
+        val bitmapMode = memory.fetch(VIC_SCROLY) and 0b0010_0000u
         val y:Int = rasterline - 51
         if (bitmapMode.toInt() == 0) {
             // text-mode
+            val borderColor = COLOR_TABLE[memory.fetch(VIC_EXTCOL).toInt() and 0b0000_1111]
+            val backgroundColor = COLOR_TABLE[memory.fetch(VIC_BGCOL1).toInt() and 0b0000_1111]
             for (rastercolumn in 0 until PAL_RASTERCOLUMNS) {
                 var color: Int
                 if (rasterline < 51 || rasterline > 250 || rastercolumn < 24 || rastercolumn > 343) {
                     // outer border color
-                    color = 0x867ADE
+                    color = borderColor
                 }
                 else {
                     // display window
                     val x = rastercolumn - 24
-                    val addr = getScreenMemoryAddress()
                     val textRow = y / 8
                     val textCol = x / 8
-                    val screenAddr = addr + textRow * 40 + textCol
-                    val char: UByte = fetchFromVideoBank(screenAddr)
+                    val addrIndex = textRow * 40 + textCol
+                    val screenAddr = getScreenMemoryAddress() + addrIndex
+                    val char = fetchFromVideoBank(screenAddr)
+                    val charColor = COLOR_TABLE[memory.fetch(COLOR_RAM + addrIndex).toInt() and 0b0000_1111]
 
                     val charY = y.rem(8)
                     val charX = x.rem(8)
@@ -92,9 +112,9 @@ class VIC {
                     val pixelMask: UByte = (0b1000_0000u shr charX).toUByte()
                     val pixel = rawCharData and pixelMask
                     color = if (pixel == pixelMask)
-                        0x867ADE  // outer border color
+                        charColor
                     else
-                        0x483AAA // default background color
+                        backgroundColor
                 }
                 bitmapData.setRGB(rastercolumn, rasterline, color)
             }
@@ -118,7 +138,7 @@ class VIC {
 
     private fun fetchFromCharMemory(offset: Int): UByte {
         val vicBank = (memory.fetch(0xDD00) and 0b0000_0011u).toInt()
-        val b = (memory.fetch(0xD018) and 0b0000_1110u).toInt() shr 1
+        val b = (memory.fetch(VIC_VMCSB) and 0b0000_1110u).toInt() shr 1
         val address = offset + b * 0x800
         return if ((b == 2 || b == 3) && (vicBank == 3 || vicBank == 1)) {
             // get value from char ROM if
@@ -131,7 +151,7 @@ class VIC {
     }
 
     private fun getScreenMemoryAddress(): Int {
-        val b = (memory.fetch(0xD018) and 0b1111_0000u).toInt() shr 4
+        val b = (memory.fetch(VIC_VMCSB) and 0b1111_0000u).toInt() shr 4
         return b * 0x400
     }
 }

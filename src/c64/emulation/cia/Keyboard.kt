@@ -14,8 +14,8 @@ import java.awt.event.KeyListener
 class Keyboard : KeyListener {
 
     companion object {
-        var SHIFT_CODE = 0xFF
-        var keyboardTranslationMatrix = arrayOf(
+        val SHIFT_CODE = 0xFF
+        val keyboardTranslationMatrix = arrayOf(
             //         DEL   RET   C-RI  F7    F1    F3    F5    C-DO
             intArrayOf(0x08, 0x0A, 0x27, 0x00, 0x00, 0x00, 0x00, 0x28),
             //         3     W     A     4     Z     S     E     LSHI
@@ -33,7 +33,7 @@ class Keyboard : KeyListener {
             //         1     <-    CTRL  2     SPACE C=    Q     RUN/STOP
             intArrayOf(0x31, 0x3C, 0x00, 0x32, 0x20, 0x00, 0x51, 0x1B)
         )
-        var keyboardTranslation = hashMapOf(
+        val keyboardTranslation = hashMapOf(
             KeyEvent.VK_PLUS to 0x2B,
             KeyEvent.VK_LESS to 0x2C,
             KeyEvent.VK_NUMBER_SIGN to 0x33,
@@ -44,9 +44,9 @@ class Keyboard : KeyListener {
             KeyEvent.VK_BACK_SPACE to 0x08,
             KeyEvent.VK_DEAD_CIRCUMFLEX to 0x3C,
             KeyEvent.VK_ESCAPE to 0x1B)
-        var keyboardTranslationShiftState = hashSetOf(
+        val keyboardTranslationShiftState = hashSetOf(
             KeyEvent.VK_LESS, KeyEvent.VK_NUMBER_SIGN, KeyEvent.VK_LEFT, KeyEvent.VK_UP)
-        var keyboardShiftTranslation = hashMapOf(
+        val keyboardShiftTranslation = hashMapOf(
             KeyEvent.VK_0 to 0x3D,
             KeyEvent.VK_7 to 0x2F,
             KeyEvent.VK_PERIOD to 0x3A,
@@ -54,7 +54,7 @@ class Keyboard : KeyListener {
             KeyEvent.VK_PLUS to 0x2A,
             KeyEvent.VK_LESS to 0x2E,
             KeyEvent.VK_NUMBER_SIGN to 0x37)
-        var keyboardShiftTranslationShiftState = hashSetOf(KeyEvent.VK_LESS, KeyEvent.VK_NUMBER_SIGN)
+        val keyboardShiftTranslationShiftState = hashSetOf(KeyEvent.VK_LESS, KeyEvent.VK_NUMBER_SIGN)
     }
 
     // todo: keys to translate:  ? [ ] CMD SHIFT-LOCK CTRL CLR/HOME RESTORE ARROW-UP F1-F8
