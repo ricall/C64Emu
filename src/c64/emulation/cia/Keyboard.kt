@@ -1,5 +1,6 @@
 package c64.emulation.cia
 
+import c64.emulation.System.cpu
 import java.awt.event.InputEvent
 import java.awt.event.KeyEvent
 import java.awt.event.KeyListener
@@ -57,6 +58,7 @@ class Keyboard : KeyListener {
     }
 
     // todo: keys to translate:  ? [ ] CMD SHIFT-LOCK CTRL CLR/HOME RESTORE ARROW-UP F1-F8
+    // todo: refactor and use charCode where possible
 
     private var shiftState: Int = -1
     private var lastKeyCode: Int = -1
@@ -120,6 +122,10 @@ class Keyboard : KeyListener {
                 }
                 if (keyboardTranslation.containsKey(lastKeyCode)) {
                     lastKeyCode = keyboardTranslation[lastKeyCode]!!
+                }
+                // start debugger with PAUSE key
+                if (lastKeyCode == KeyEvent.VK_PAUSE) {
+                    cpu.debugger.debugging = true
                 }
             }
         } else {

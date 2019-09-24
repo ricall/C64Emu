@@ -1,6 +1,7 @@
 package c64.emulation.ui
 
 import c64.emulation.BootstrapC64
+import c64.emulation.System
 import c64.emulation.System.keyboard
 import c64.emulation.System.vic
 import c64.emulation.vic.VIC
@@ -11,7 +12,9 @@ import org.apache.log4j.BasicConfigurator
 import org.apache.log4j.ConsoleAppender
 import org.apache.log4j.PatternLayout
 import java.awt.Dimension
+import java.util.Timer
 import javax.swing.JFrame
+import kotlin.concurrent.schedule
 import kotlin.concurrent.timer
 
 /**
@@ -44,6 +47,11 @@ class EmulatorUI {
         timer("display_refresh", false, 100, 100) {
             frame.graphics.drawImage(vic.bitmapData, 0, 0,
                 vic.bitmapData.width * 2, vic.bitmapData.height * 2, frame)
+        }
+
+        // load basic test program
+        Timer().schedule(3000) {
+            System.memory.loadPrg("./test-src/c64/prg/farbtest.prg")
         }
     }
 }

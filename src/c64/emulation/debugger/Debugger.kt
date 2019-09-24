@@ -19,6 +19,7 @@ class Debugger(private var disassembly: Disassembly) {
 
     companion object {
         private val PRINT_MEM_CMD = Regex("^m[0-9a-f]{2,4}$")
+        private val PRINT_MEM_BLOCK_CMD = Regex("^b[0-9a-f]{2,4}$")
         private val PRINT_STACK_CMD = Regex("^s$")
         private val CONTINUE_RUN_CMD = Regex("^c$")
         private val CONTINUE_RUN_NO_DISASSEMBLY_CMD = Regex("^cx$")
@@ -61,6 +62,12 @@ class Debugger(private var disassembly: Disassembly) {
                 consoleInput.matches(PRINT_MEM_CMD) -> {
                     val addr = consoleInput.substring(1).toInt(16)
                     logger.debug { memory.printMemoryLineWithAddress(addr) }
+                }
+                consoleInput.matches(PRINT_MEM_BLOCK_CMD) -> {
+                    val addr = consoleInput.substring(1).toInt(16)
+                    for (i in 0..31) {
+                        logger.debug { memory.printMemoryLineWithAddress(addr + i*0x08) }
+                    }
                 }
                 consoleInput.matches(PRINT_STACK_CMD) -> {
                     logger.debug { memory.printStackLine() }

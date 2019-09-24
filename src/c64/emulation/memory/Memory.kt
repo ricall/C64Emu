@@ -103,6 +103,14 @@ class Memory {
         load(charGenRom, CHARGEN_FILE, 0, CHARGEN_SIZE)
     }
 
+    fun loadPrg(filename: String) {
+        val file = File(filename)
+        val buffer: UByteArray = Files.readAllBytes(file.toPath()).toUByteArray()
+        val targetAddress = wordFromLoHi(buffer[0], buffer[1])
+        logger.debug { "loading <$filename> @${targetAddress.toHex()}" }
+        buffer.copyInto(ram, targetAddress, 2)
+    }
+
     @Suppress("unused")
     fun loadIntoRam(filename: String, address: Int = 0x0000) {
         load(ram, filename, address, -1)
