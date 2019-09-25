@@ -109,6 +109,21 @@ class Memory {
         val targetAddress = wordFromLoHi(buffer[0], buffer[1])
         logger.debug { "loading <$filename> @${targetAddress.toHex()}" }
         buffer.copyInto(ram, targetAddress, 2)
+        if (targetAddress == 0x0801) {
+            // handling of basic programs
+            val basicEnd = targetAddress + buffer.size - 2
+            val basicEndLo = loByteFromWord(basicEnd)
+            val basicEndHi = hiByteFromWord(basicEnd)
+            // set basic prg end pointer
+            store(0x002D, basicEndLo)
+            store(0x002E, basicEndHi)
+            // set basic vars start pointer
+            store(0x002F, basicEndLo)
+            store(0x0030, basicEndHi)
+            // set basic vars end pointer
+            store(0x0031, basicEndLo)
+            store(0x0032, basicEndHi)
+        }
     }
 
     @Suppress("unused")

@@ -44,14 +44,14 @@ class EmulatorUI {
         }
 
         // 40ms ~= 25 frames/s
-        timer("display_refresh", false, 100, 100) {
+        timer("display_refresh", false, 100, 40) {
             frame.graphics.drawImage(vic.bitmapData, 0, 0,
                 vic.bitmapData.width * 2, vic.bitmapData.height * 2, frame)
         }
 
         // load basic test program
         Timer().schedule(3000) {
-            System.memory.loadPrg("./test-src/c64/prg/farbtest.prg")
+            System.memory.loadPrg("./test-src/c64/prg/g4 farbdemo.prg")
         }
     }
 }

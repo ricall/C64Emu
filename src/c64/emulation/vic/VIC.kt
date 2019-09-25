@@ -87,6 +87,8 @@ class VIC {
         val bitmapMode = memory.fetch(VIC_SCROLY) and 0b0010_0000u
         val y:Int = rasterline - 51
         if (bitmapMode.toInt() == 0) {
+            // todo: multicolor text mode: set by bit 4 of $d016
+            // todo: Extended Background Color Mode
             // text-mode
             val borderColor = COLOR_TABLE[memory.fetch(VIC_EXTCOL).toInt() and 0b0000_1111]
             val backgroundColor = COLOR_TABLE[memory.fetch(VIC_BGCOL1).toInt() and 0b0000_1111]
