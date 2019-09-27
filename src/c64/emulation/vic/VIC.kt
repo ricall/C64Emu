@@ -92,6 +92,12 @@ class VIC {
             // text-mode
             val borderColor = COLOR_TABLE[memory.fetch(VIC_EXTCOL).toInt() and 0b0000_1111]
             val backgroundColor = COLOR_TABLE[memory.fetch(VIC_BGCOL1).toInt() and 0b0000_1111]
+            val screenMemoryAddress = getScreenMemoryAddress()
+            val videoBankAddress = getVideoBankAddress()
+            val fetchFromCharMemoryFunction = getFetchFromCharMemoryFunction()
+            val textRow = y / 8
+            val textRowAddr = textRow * 40
+            val charY = y.rem(8)
             for (rastercolumn in 0 until PAL_RASTERCOLUMNS) {
                 var color: Int
                 if (rasterline < 51 || rasterline > 250 || rastercolumn < 24 || rastercolumn > 343) {
@@ -101,16 +107,14 @@ class VIC {
                 else {
                     // display window
                     val x = rastercolumn - 24
-                    val textRow = y / 8
                     val textCol = x / 8
-                    val addrIndex = textRow * 40 + textCol
-                    val screenAddr = getScreenMemoryAddress() + addrIndex
-                    val char = fetchFromVideoBank(screenAddr)
+                    val addrIndex = textRowAddr + textCol
+                    val screenAddr = screenMemoryAddress + addrIndex
+                    val char = memory.fetch(screenAddr + videoBankAddress)
                     val charColor = COLOR_TABLE[memory.fetch(COLOR_RAM + addrIndex).toInt() and 0b0000_1111]
 
-                    val charY = y.rem(8)
                     val charX = x.rem(8)
-                    val rawCharData = fetchFromCharMemory(char.toInt() * 8 + charY)
+                    val rawCharData = fetchFromCharMemoryFunction(char.toInt() * 8 + charY)
                     val pixelMask: UByte = (0b1000_0000u shr charX).toUByte()
                     val pixel = rawCharData and pixelMask
                     color = if (pixel == pixelMask)
@@ -122,38 +126,65 @@ class VIC {
             }
         }
         else {
+            // bitmap mode
+            val pixel = 0x00
+            // getBitmapAddress()
             // TODO: handle bitmap-mode
         }
     }
 
-    private fun fetchFromVideoBank(address: Int): UByte {
+    private fun getVideoBank(): Int {
+        return (memory.fetch(0xDD00) and 0b0000_0011u).toInt()
+    }
+
+    private fun getVideoBankAddress(): Int {
         // select video bank + translate address
         // vic bank
         // 0: bank 3 $C000-$FFFF
         // 1: bank 2 $8000-$BFFF
         // 2: bank 1 $4000-$7FFF
         // 3: bank 0 $0000-$3FFF
-        val vicBank = memory.fetch(0xDD00) and 0b0000_0011u
-        val translatedAddr: Int = address + (0xC000 - vicBank.toInt() * 0x4000)
-        return memory.fetch(translatedAddr)
+        return 0xC000 - getVideoBank() * 0x4000
+    }
+
+    private fun fetchFromVideoBank(address: Int): UByte {
+        return memory.fetch(address + getVideoBankAddress())
     }
 
     private fun fetchFromCharMemory(offset: Int): UByte {
-        val vicBank = (memory.fetch(0xDD00) and 0b0000_0011u).toInt()
-        val b = (memory.fetch(VIC_VMCSB) and 0b0000_1110u).toInt() shr 1
-        val address = offset + b * 0x800
-        return if ((b == 2 || b == 3) && (vicBank == 3 || vicBank == 1)) {
+        val vicBank = getVideoBank()
+        val characterDotDataIndex = (memory.fetch(VIC_VMCSB) and 0b0000_1110u).toInt() shr 1
+        val characterDotDataAddress = offset + characterDotDataIndex * 0x800
+        return if ((characterDotDataIndex == 2 || characterDotDataIndex == 3) && (vicBank == 3 || vicBank == 1)) {
             // get value from char ROM if
             // * VIC bank 0 or 2 is selected  AND
             // * char mem pointer is 2 or 3
-            memory.fetchFromCharROM(address)
+            memory.fetchFromCharROM(characterDotDataAddress)
         } else {
-            fetchFromVideoBank(address)
+            fetchFromVideoBank(characterDotDataAddress)
+        }
+    }
+
+    private fun getFetchFromCharMemoryFunction(): (offset: Int) -> UByte {
+        val vicBank = getVideoBank()
+        val characterDotDataIndex = (memory.fetch(VIC_VMCSB) and 0b0000_1110u).toInt() shr 1
+        return if ((characterDotDataIndex == 2 || characterDotDataIndex == 3) && (vicBank == 3 || vicBank == 1)) {
+            // get value from char ROM if
+            // * VIC bank 0 or 2 is selected  AND
+            // * char mem pointer is 2 or 3
+            memory::fetchFromCharROM
+        } else {
+            ::fetchFromVideoBank
         }
     }
 
     private fun getScreenMemoryAddress(): Int {
         val b = (memory.fetch(VIC_VMCSB) and 0b1111_0000u).toInt() shr 4
         return b * 0x400
+    }
+
+    private fun getBitmapAddress(): Int {
+        // todo
+        return 0x0000
     }
 }
