@@ -37,6 +37,8 @@ class VIC {
         const val VIC_SCROLY = 0xD011
         // Read Current Raster Scan Line/Write Line to Compare for Raster IRQ
         const val VIC_RASTER = 0xD012
+        // Horizontal Fine Scrolling and Control Register
+        const val VIC_SCROLX = 0xD016
         // Chip Memory Control Register
         const val VIC_VMCSB = 0xD018
         // Border Color Register
@@ -47,9 +49,13 @@ class VIC {
         // color ram $D800-DBFF
         const val COLOR_RAM = 0xD800
 
-        val COLOR_TABLE = arrayOf(
+        /*val COLOR_TABLE = arrayOf(
             0x000000, 0xFFFFFF, 0xAF2A29, 0x62D8CC, 0xB03FB6, 0x4AC64A, 0x3739C4, 0xE4ED4E,
             0xB6591C, 0x683808, 0xEA746C, 0x4D4D4D, 0x848484, 0xA6FA9E, 0x707CE6, 0xB6B6B5
+        )*/
+        val COLOR_TABLE = arrayOf(
+            0x000000, 0xFFFFFF, 0x924A40, 0x84C5CC, 0x9351B6, 0x72B14B, 0x483AAA, 0xD5DF7C,
+            0x99692D, 0x675200, 0xC18178, 0x606060, 0x8A8A8A, 0xB3EC91, 0x867ADE, 0xB3B3B3
         )
     }
 
@@ -85,51 +91,95 @@ class VIC {
         // display window from rasterline 51 - 250 (=200 lines)
         // display window from rastercolumn 24 - 343 (=320px)
         val bitmapMode = memory.fetch(VIC_SCROLY) and 0b0010_0000u
-        val y:Int = rasterline - 51
+        val y: Int = rasterline - 51
         if (bitmapMode.toInt() == 0) {
-            // todo: multicolor text mode: set by bit 4 of $d016
-            // todo: Extended Background Color Mode
             // text-mode
-            val borderColor = COLOR_TABLE[memory.fetch(VIC_EXTCOL).toInt() and 0b0000_1111]
-            val backgroundColor = COLOR_TABLE[memory.fetch(VIC_BGCOL1).toInt() and 0b0000_1111]
-            val screenMemoryAddress = getScreenMemoryAddress()
-            val videoBankAddress = getVideoBankAddress()
-            val fetchFromCharMemoryFunction = getFetchFromCharMemoryFunction()
-            val textRow = y / 8
-            val textRowAddr = textRow * 40
-            val charY = y.rem(8)
-            for (rastercolumn in 0 until PAL_RASTERCOLUMNS) {
-                var color: Int
-                if (rasterline < 51 || rasterline > 250 || rastercolumn < 24 || rastercolumn > 343) {
-                    // outer border color
-                    color = borderColor
-                }
-                else {
-                    // display window
-                    val x = rastercolumn - 24
-                    val textCol = x / 8
-                    val addrIndex = textRowAddr + textCol
-                    val screenAddr = screenMemoryAddress + addrIndex
-                    val char = memory.fetch(screenAddr + videoBankAddress)
-                    val charColor = COLOR_TABLE[memory.fetch(COLOR_RAM + addrIndex).toInt() and 0b0000_1111]
-
-                    val charX = x.rem(8)
-                    val rawCharData = fetchFromCharMemoryFunction(char.toInt() * 8 + charY)
-                    val pixelMask: UByte = (0b1000_0000u shr charX).toUByte()
-                    val pixel = rawCharData and pixelMask
-                    color = if (pixel == pixelMask)
-                        charColor
-                    else
-                        backgroundColor
-                }
-                bitmapData.setRGB(rastercolumn, rasterline, color)
-            }
+            rasterTextMode(rasterline, y)
         }
         else {
             // bitmap mode
-            val pixel = 0x00
-            // getBitmapAddress()
-            // TODO: handle bitmap-mode
+            rasterBitmapMode(rasterline, y)
+        }
+    }
+
+    private fun rasterTextMode(rasterline: Int, y: Int) {
+        // todo: multicolor text mode: set by bit 4 of $d016
+        // todo: Extended Background Color Mode
+        // todo: SCROLX bit 3 - 38/40 column mode
+        val borderColor = COLOR_TABLE[memory.fetch(VIC_EXTCOL).toInt() and 0b0000_1111]
+        val backgroundColor = COLOR_TABLE[memory.fetch(VIC_BGCOL1).toInt() and 0b0000_1111]
+        val screenMemoryAddress = getScreenMemoryAddress()
+        val videoBankAddress = getVideoBankAddress()
+        val fetchFromCharMemoryFunction = getFetchFromCharMemoryFunction()
+        val textRow = y / 8
+        val textRowAddr = textRow * 40
+        val charY = y.rem(8)
+
+        val colorRamRowAddress = COLOR_RAM + textRowAddr
+        val screenMemoryRowAddress = videoBankAddress + screenMemoryAddress + textRowAddr
+
+        for (rastercolumn in 0 until PAL_RASTERCOLUMNS) {
+            var color: Int
+            if (rasterline < 51 || rasterline > 250 || rastercolumn < 24 || rastercolumn > 343) {
+                // outer border color
+                color = borderColor
+            } else {
+                // display window
+                val x = rastercolumn - 24
+                val textCol = x / 8
+                val char = memory.fetch(screenMemoryRowAddress + textCol)
+                val charColor = COLOR_TABLE[memory.fetch(colorRamRowAddress + textCol).toInt() and 0b0000_1111]
+
+                val charX = x and 0b0000_0111
+                // todo: small optimization possible - fetchFromVideoBank should be replaced
+                val rawCharData = fetchFromCharMemoryFunction(char.toInt() * 8 + charY)
+                val pixelMask: UByte = (0b1000_0000u shr charX).toUByte()
+                color = if (rawCharData and pixelMask == pixelMask)
+                    charColor
+                else
+                    backgroundColor
+            }
+            bitmapData.setRGB(rastercolumn, rasterline, color)
+        }
+    }
+
+    private fun rasterBitmapMode(rasterline: Int, y: Int) {
+        // todo: implement multicolor-mode
+        val isMulticolorMode = memory.fetch(VIC_SCROLX).toInt() and 0b0001_0000 == 0b0001_0000
+        val videoBankAddress = getVideoBankAddress()
+        val borderColor = COLOR_TABLE[memory.fetch(VIC_EXTCOL).toInt() and 0b0000_1111]
+        val textRow = y / 8
+        val textRowAddr = textRow * 40
+        val charY = y.rem(8)
+
+        val bitmapColorRowAddress = videoBankAddress + getBitmapColorAddress() + textRowAddr
+        val bitmapRowAddress = videoBankAddress + getBitmapAddress() + textRowAddr * 8 + charY
+
+        for (rastercolumn in 0 until PAL_RASTERCOLUMNS) {
+            var color: Int
+            if (rasterline < 51 || rasterline > 250 || rastercolumn < 24 || rastercolumn > 343) {
+                // outer border color
+                color = borderColor
+            } else {
+                val x = rastercolumn - 24
+                val textCol = x / 8
+                val pxBit =  x and 0b0000_0111
+                val colors = memory.fetch(bitmapColorRowAddress + textCol).toInt()
+                // 8x8 colorblock - hi-nibble: pixel-color, lo-nibble: background-color
+                val bgColor = COLOR_TABLE[colors and 0b0000_1111]
+                val pxColor = COLOR_TABLE[colors and 0b1111_0000 shr 4]
+
+                // get byte from bitmap
+                val bitmapByte = memory.fetch(bitmapRowAddress + textCol * 8).toInt()
+                // read the correct bit
+                val bitTest = (0b1000_0000u shr pxBit).toInt()
+                color = if (bitmapByte and bitTest == bitTest) {
+                    pxColor
+                } else {
+                    bgColor
+                }
+            }
+            bitmapData.setRGB(rastercolumn, rasterline, color)
         }
     }
 
@@ -179,12 +229,19 @@ class VIC {
     }
 
     private fun getScreenMemoryAddress(): Int {
-        val b = (memory.fetch(VIC_VMCSB) and 0b1111_0000u).toInt() shr 4
-        return b * 0x400
+        return 0x0400 * ((memory.fetch(VIC_VMCSB) and 0b1111_0000u).toInt() shr 4)
     }
 
     private fun getBitmapAddress(): Int {
-        // todo
-        return 0x0000
+        // bit 3 of VIC_VMCSB controls start of the bitmap data
+        return if (memory.fetch(VIC_VMCSB).toInt() and 0b0000_01000 == 0b0000_01000) {
+            0x2000
+        } else {
+            0x0000
+        }
+    }
+
+    private fun getBitmapColorAddress(): Int {
+        return getScreenMemoryAddress()
     }
 }
