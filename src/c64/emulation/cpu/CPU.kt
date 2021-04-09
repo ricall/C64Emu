@@ -2,6 +2,7 @@ package c64.emulation.cpu
 
 import c64.emulation.C64ExecutionException
 import c64.emulation.System.cia
+import c64.emulation.System.clock
 import c64.emulation.System.memory
 import c64.emulation.System.registers
 import c64.emulation.System.vic
@@ -25,7 +26,7 @@ typealias InstructionWithArg = (value: UByte) -> Unit
 /**
  * Emulator for CPU MOS 6510/8500.
  *
- * @author Daniel Schulte 2017-2019
+ * @author Daniel Schulte 2017-2021
  */
 @ExperimentalUnsignedTypes
 class CPU {
@@ -51,8 +52,8 @@ class CPU {
         private val INSTRUCTION_TABLE = arrayOfNulls<Any>(0x100)
     }
 
-    internal var disassembly: Disassembly
-    internal var debugger: Debugger
+    internal var disassembly: Disassembly = Disassembly()
+    internal var debugger: Debugger = Debugger(disassembly)
 
     // currently executed opcode
     internal var currentOpcode: UByte = 0x00u
@@ -61,11 +62,6 @@ class CPU {
 
     // 0 none, 1=IRQ, 2=NMI, 3=RESET, 4=BRK
     private var irqTypeSignaled = 0
-
-    init {
-        disassembly = Disassembly()
-        debugger = Debugger(disassembly)
-    }
 
     fun initialize() {
         logger.info { "init CPU 6510/8500" }
@@ -136,7 +132,6 @@ class CPU {
     }
 
     fun runMachine() {
-        val clock = Clock()
         clock.start(::runCycles)
     }
 

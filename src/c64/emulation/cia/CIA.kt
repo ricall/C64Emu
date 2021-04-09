@@ -1,7 +1,10 @@
 package c64.emulation.cia
 
+import c64.emulation.System.clock
 import c64.emulation.System.cpu
 import c64.emulation.System.keyboard
+import c64.util.bcdToInt
+import c64.util.toBcd
 import c64.util.toBinary
 import c64.util.toHex
 import mu.KotlinLogging
@@ -11,10 +14,17 @@ private val logger = KotlinLogging.logger {}
 /**
  * Emulation of the C64 Complex Interface Adapter (CIA 6526).
  *
- * @author Daniel Schulte 2017-2019
+ * @author Daniel Schulte 2017-2021
  */
 @ExperimentalUnsignedTypes
 class CIA {
+
+    private data class TimeOfDayClock(
+        var todTen: UByte = 0x00u,
+        var todSec: UByte = 0x00u,
+        var todMin: UByte = 0x00u,
+        var todHrs: UByte = 0x00u
+    )
 
     companion object {
         val CIA_ADDRESS_SPACE = 0xDC00..0xDCFF
@@ -47,6 +57,12 @@ class CIA {
     private var timerBLatch: Int = 0x0000
     private var timerB: Int = 0x0000
 
+    private var timeOfDayCycle: Long = 0
+    private var timeOfDayTenCycle: Long = 0
+    private var timeOfDayClock: TimeOfDayClock = TimeOfDayClock()
+    private var timeOfDayClockStopped = true
+    private var timeOfDaySaved: TimeOfDayClock? = null
+
     private var ciaIcrState: UByte = 0x00u
 
     private var dataPortA: UByte = 0x00u
@@ -55,6 +71,63 @@ class CIA {
      * Signals the next cycle
      */
     fun cycle() {
+        cycleTimeOfDayClock()
+        cycleTimerA()
+    }
+
+    private fun cycleTimeOfDayClock() {
+        // check for stopped time of day clock
+        if (timeOfDayClockStopped) {
+            return
+        }
+
+        // adjust TOD
+        timeOfDayCycle++
+        timeOfDayTenCycle++
+        if (timeOfDayCycle > clock.cyclesPerSecond) {
+            timeOfDayCycle = 0
+            timeOfDayTenCycle = 0
+            timeOfDayClock.todTen = 0x00u
+            val second = timeOfDayClock.todSec.bcdToInt()
+            if (second == 59) {
+                timeOfDayClock.todSec = 0x00u
+
+                val minute = timeOfDayClock.todMin.bcdToInt()
+                if (minute == 59) {
+                    timeOfDayClock.todMin = 0x00u
+
+                    val hour = timeOfDayClock.todHrs.bcdToInt()
+                    //val ampmFlag = timeOfDayClock.todHrs > 127 ? 0b
+                    if (hour == 11) {
+                        //ampmFlag = ampmFlag
+                        // TODO: 09.04.2021 invert am/pm flag
+                        timeOfDayClock.todHrs = (hour + 1).toUByte().toBcd()
+                    } else if (hour == 12) {
+                        // TODO: 09.04.2021 save am/pm flag
+                        timeOfDayClock.todHrs = 0x01u
+                    } else {
+                        // TODO: 09.04.2021 save am/pm flag
+                        timeOfDayClock.todHrs = (hour + 1).toUByte().toBcd()
+                    }
+                } else {
+                    timeOfDayClock.todMin = (minute + 1).toUByte().toBcd()
+                }
+            } else {
+                timeOfDayClock.todSec = (second + 1).toUByte().toBcd()
+            }
+        }
+        if (timeOfDayTenCycle > clock.cyclesPerTenthsSecond) {
+            // adjust tenths seconds
+            timeOfDayTenCycle = 0
+            timeOfDayClock.todTen++
+            if (timeOfDayClock.todTen > 0x09u)
+            {
+                timeOfDayClock.todTen = 0x00u
+            }
+        }
+    }
+
+    private fun cycleTimerA() {
         if (timerAEnabled) {
             //logger.info {"counting cycle down to $timerA"}
             timerA--
@@ -86,6 +159,28 @@ class CIA {
             }
             DATA_PORT_B -> {
                 keyboard.getDataPortB(dataPortA)
+            }
+            TIMER_A_LOW -> {
+                return timerA.toUByte()
+            }
+            TIMER_A_HIGH -> {
+                return ((timerA and 0xFF00) shr 8).toUByte()
+            }
+            TODTEN -> {
+                // unfreeze TOD clock
+                timeOfDaySaved = null
+                return timeOfDayClock.todTen
+            }
+            TODSEC -> {
+                return timeOfDaySaved?.todSec ?: timeOfDayClock.todSec
+            }
+            TODMIN -> {
+                return timeOfDaySaved?.todMin ?: timeOfDayClock.todMin
+            }
+            TODHRS -> {
+                // freeze whole clock will TODTEN will be read
+                timeOfDaySaved = timeOfDayClock.copy()
+                return timeOfDaySaved?.todHrs ?: timeOfDayClock.todHrs
             }
             CIAICR -> {
                 val result = ciaIcrState
@@ -137,16 +232,22 @@ class CIA {
                 timerBLatch = (timerBLatch and 0x00FF) + (byte.toInt() shl 8)
             }
             TODTEN -> {
-                logger.info { "missing IMPL for TODTEN:write ${byte.toHex()}"}
+                // TODO: check for CRB-Bit7=1 --> set alarm
+                timeOfDayClock.todTen = byte and 0b0000_1111u
+                timeOfDayClockStopped = false
             }
             TODSEC -> {
-                logger.info { "missing IMPL for TODSEC:write ${byte.toHex()}" }
+                // TODO: check for CRB-Bit7=1 --> set alarm
+                timeOfDayClock.todSec = byte and 0b0111_1111u
             }
             TODMIN -> {
-                logger.info { "missing IMPL for TODMIN:write ${byte.toHex()}" }
+                // TODO: check for CRB-Bit7=1 --> set alarm
+                timeOfDayClock.todMin = byte and 0b0111_1111u
             }
             TODHRS -> {
-                logger.info { "missing IMPL for TODHRS:write ${byte.toHex()}" }
+                // TODO: check for CRB-Bit7=1 --> set alarm
+                timeOfDayClockStopped = true
+                timeOfDayClock.todHrs = byte
             }
             CIASDR -> {
                 logger.info { "missing IMPL for CIASDR:write ${byte.toHex()}" }

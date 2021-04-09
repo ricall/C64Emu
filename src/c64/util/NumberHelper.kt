@@ -1,7 +1,7 @@
 package c64.util
 
 /**
- * @author Daniel Schulte 2017-2019
+ * @author Daniel Schulte 2017-2021
  */
 
 /**
@@ -71,4 +71,22 @@ fun UByte.incBy(value: UByte): UByte {
 @ExperimentalUnsignedTypes
 fun UByte.decBy(value: UByte): UByte {
     return this.minus(value).toUByte()
+}
+
+/**
+ * Converts this BCD coded byte to int.
+ */
+@ExperimentalUnsignedTypes
+fun UByte.bcdToInt(): Int {
+    // lo nibble (byte % 16)  +  hi nibble +(byte / 16 * 10)
+    return (this and 0b00001111u).toInt() + (toInt() shr 4) * 10
+}
+
+/**
+ * Converts this byte to a BCD coded byte.
+ */
+@ExperimentalUnsignedTypes
+fun UByte.toBcd(): UByte {
+    // (byte / 10 * 16) + (byte % 10)
+    return (this / 10u * 16u + this % 10u).toUByte()
 }

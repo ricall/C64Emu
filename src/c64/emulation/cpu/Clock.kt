@@ -4,7 +4,7 @@ package c64.emulation.cpu
 /**
  * Clock - helper to get the right timing handled. It runs with a resolution of 1 millisecond.
  *
- * @author Daniel Schulte 2017-2019
+ * @author Daniel Schulte 2017-2021
  */
 class Clock {
 
@@ -14,6 +14,12 @@ class Clock {
         const val PAL_CYCLES_PER_MILLI = PAL_CLOCK / 1000
     }
 
+    // use PAL as default for the clock
+    val clock = PAL_CLOCK
+    val cyclesPerSecond = PAL_CLOCK
+    val cyclesPerTenthsSecond = (PAL_CLOCK / 10).toLong()
+    val cyclesPerMilli = PAL_CYCLES_PER_MILLI
+
     fun start(callback: (Long) -> Long) {
         var lastMilliSecond = System.currentTimeMillis()
         // clock main loop
@@ -22,7 +28,7 @@ class Clock {
             val currentMilliSecond = System.currentTimeMillis()
             // check whether milliseconds counted up
             if (currentMilliSecond > lastMilliSecond) {
-                callback.invoke((currentMilliSecond - lastMilliSecond) * PAL_CYCLES_PER_MILLI)
+                callback.invoke((currentMilliSecond - lastMilliSecond) * cyclesPerMilli)
                 lastMilliSecond = currentMilliSecond
             } else {
                 // same millisecond, sleep 1 millisecond instead

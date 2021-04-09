@@ -3,6 +3,7 @@ package c64.emulation
 import c64.emulation.cia.CIA
 import c64.emulation.cia.Keyboard
 import c64.emulation.cpu.CPU
+import c64.emulation.cpu.Clock
 import c64.emulation.cpu.Registers
 import c64.emulation.memory.Memory
 import c64.emulation.vic.VIC
@@ -21,6 +22,7 @@ object System {
     internal var vic = VIC()
     internal var cia = CIA()
     internal var keyboard = Keyboard()
+    internal var clock = Clock()
     // initialize CPU at last
     internal var cpu = CPU()
 

@@ -8,7 +8,7 @@ import java.awt.event.KeyListener
 /**
  * Class which handles Keyboard input and translates the incoming keyCodes for the CIA.
  *
- * @author Daniel Schulte 2017-2019
+ * @author Daniel Schulte 2017-2021
  */
 @ExperimentalUnsignedTypes
 class Keyboard : KeyListener {
@@ -17,7 +17,7 @@ class Keyboard : KeyListener {
         val SHIFT_CODE = 0xFF
         val keyboardTranslationMatrix = arrayOf(
             //         DEL   RET   C-RI  F7    F1    F3    F5    C-DO
-            intArrayOf(0x08, 0x0A, 0x27, 0x00, 0x00, 0x00, 0x00, 0x28),
+            intArrayOf(0x08, 0x0A, 0x27, 0x76, 0x70, 0x72, 0x74, 0x28),
             //         3     W     A     4     Z     S     E     LSHI
             intArrayOf(0x33, 0x57, 0x41, 0x34, 0x5A, 0x53, 0x45, 0xFF),
             //         5     R     D     6     C     F     T     X
@@ -45,7 +45,8 @@ class Keyboard : KeyListener {
             KeyEvent.VK_DEAD_CIRCUMFLEX to 0x3C,
             KeyEvent.VK_ESCAPE to 0x1B)
         val keyboardTranslationShiftState = hashSetOf(
-            KeyEvent.VK_LESS, KeyEvent.VK_NUMBER_SIGN, KeyEvent.VK_LEFT, KeyEvent.VK_UP)
+            KeyEvent.VK_LESS, KeyEvent.VK_NUMBER_SIGN, KeyEvent.VK_LEFT, KeyEvent.VK_UP, KeyEvent.VK_F2, KeyEvent.VK_F4,
+            KeyEvent.VK_F6, KeyEvent.VK_F8)
         val keyboardShiftTranslation = hashMapOf(
             KeyEvent.VK_0 to 0x3D,
             KeyEvent.VK_7 to 0x2F,
@@ -55,9 +56,14 @@ class Keyboard : KeyListener {
             KeyEvent.VK_LESS to 0x2E,
             KeyEvent.VK_NUMBER_SIGN to 0x37)
         val keyboardShiftTranslationShiftState = hashSetOf(KeyEvent.VK_LESS, KeyEvent.VK_NUMBER_SIGN)
+        val keyboardAltTranslationShiftState = hashSetOf(KeyEvent.VK_8, KeyEvent.VK_9)
+        val keyboardAltTranslation = hashMapOf(
+            KeyEvent.VK_8 to 0x3A,
+            KeyEvent.VK_9 to 0x3B
+        )
     }
 
-    // todo: keys to translate:  ? [ ] CMD SHIFT-LOCK CTRL CLR/HOME RESTORE ARROW-UP F1-F8
+    // todo: keys to translate:  CMD SHIFT-LOCK CTRL CLR/HOME RESTORE ARROW-UP
     // todo: refactor and use charCode where possible
 
     private var shiftState: Int = -1
@@ -100,6 +106,7 @@ class Keyboard : KeyListener {
             shiftState = -1
             lastKeyCode = e.keyCode
             val shiftDown = e.modifiersEx and InputEvent.SHIFT_DOWN_MASK == InputEvent.SHIFT_DOWN_MASK
+            val altDown = e.modifiersEx and InputEvent.ALT_DOWN_MASK == InputEvent.ALT_DOWN_MASK
             if (shiftDown) {
                 if (lastKeyCode in KeyEvent.VK_A..KeyEvent.VK_Z ||
                     lastKeyCode in KeyEvent.VK_1..KeyEvent.VK_2 ||
@@ -114,6 +121,20 @@ class Keyboard : KeyListener {
                 }
                 if (keyboardShiftTranslation.containsKey(lastKeyCode)) {
                     lastKeyCode = keyboardShiftTranslation[lastKeyCode]!!
+                }
+                // special handling for ?
+                if (e.keyChar == '?') {
+                    shiftState = SHIFT_CODE
+                    // use keyCode for / (because on c64 keyboard layout ? is on the / key)
+                    lastKeyCode = 0x2F
+                }
+            }
+            else if (altDown) {
+                if (keyboardAltTranslationShiftState.contains(lastKeyCode)) {
+                    shiftState = SHIFT_CODE
+                }
+                if (keyboardAltTranslation.containsKey(lastKeyCode)) {
+                    lastKeyCode = keyboardAltTranslation[lastKeyCode]!!
                 }
             }
             else {
