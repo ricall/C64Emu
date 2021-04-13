@@ -97,17 +97,14 @@ class CIA {
                     timeOfDayClock.todMin = 0x00u
 
                     val hour = timeOfDayClock.todHrs.bcdToInt()
-                    //val ampmFlag = timeOfDayClock.todHrs > 127 ? 0b
+                    var ampmFlag = timeOfDayClock.todHrs and 0b1000_0000u
                     if (hour == 11) {
-                        //ampmFlag = ampmFlag
-                        // TODO: 09.04.2021 invert am/pm flag
-                        timeOfDayClock.todHrs = (hour + 1).toUByte().toBcd()
+                        ampmFlag = ampmFlag xor 0b1000_0000u
+                        timeOfDayClock.todHrs = (hour + 1).toUByte().toBcd() or ampmFlag
                     } else if (hour == 12) {
-                        // TODO: 09.04.2021 save am/pm flag
-                        timeOfDayClock.todHrs = 0x01u
+                        timeOfDayClock.todHrs = 0x01.toUByte() or ampmFlag
                     } else {
-                        // TODO: 09.04.2021 save am/pm flag
-                        timeOfDayClock.todHrs = (hour + 1).toUByte().toBcd()
+                        timeOfDayClock.todHrs = (hour + 1).toUByte().toBcd() or ampmFlag
                     }
                 } else {
                     timeOfDayClock.todMin = (minute + 1).toUByte().toBcd()
