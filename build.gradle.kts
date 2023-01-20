@@ -4,6 +4,7 @@ plugins {
 	id("io.gitlab.arturbosch.detekt") version "1.22.0"
 	kotlin("jvm") version "1.7.21"
 	jacoco
+	application
 }
 
 group = "com.circlein"
@@ -36,6 +37,10 @@ dependencies {
 	testImplementation("com.nhaarman:mockito-kotlin:$kotlinMockitoVersion")
 }
 
+application {
+	mainClass.set("c64.emulation.ui.EmulatorUIKt")
+}
+
 tasks.withType<KotlinCompile> {
 	kotlinOptions {
 		freeCompilerArgs = listOf("-Xjsr305=strict", "-java-parameters")
@@ -51,3 +56,5 @@ tasks.withType<Test> {
 tasks.jacocoTestReport {
 	dependsOn(tasks.test)
 }
+
+
