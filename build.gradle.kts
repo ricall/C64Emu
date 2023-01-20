@@ -7,7 +7,7 @@ plugins {
 	application
 }
 
-group = "com.circlein"
+group = "c64"
 version = "1.0.0"
 java.sourceCompatibility = JavaVersion.VERSION_17
 
